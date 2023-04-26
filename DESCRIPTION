@@ -1,4 +1,6 @@
 Package: PopGrid
+Imports: tidyverse, tidycensus, tigris, sf
+Depends: tidyverse, tidycensus, tigris, sf
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
