@@ -17,7 +17,10 @@
 #' @export
 #'
 #' @examples
-#' run_aggregation(mode = "county", year = 2010, states = c("MA", "RI", "CT", "ME", "NH", "VT"), output_name = "New England")
+#' run_aggregation(mode = "county",
+#'  year = 2010,
+#'  states = c("MA", "RI", "CT", "ME", "NH", "VT"),
+#'  output_name = "New England")
 
 run_aggregation <- function(
     mode = "shapefile",
@@ -49,13 +52,17 @@ run_aggregation <- function(
     separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
     mutate(Gender = toupper(Gender),
            AgeRange = gsub(" to ", "TO", AgeRange),
-           Race = str_extract(concept, "(?<=\\()[^)]+(?= ALONE\\))")) %>%
+           Race = str_extract(concept, "(?<=\\().*?(?=\\))")) %>%
     mutate(AgeRange = gsub(" years", "", AgeRange)) %>%
     mutate(AgeRange = gsub(" and over", "+", AgeRange)) %>%
     mutate(AgeRange = gsub(" and ", "TO", AgeRange)) %>%
     mutate(AgeRange = gsub("Under ", "0TO", AgeRange)) %>%
     mutate(Ethnicity = "ALL") %>%
     select(-concept)
+  var_info_abb <- var_info %>%
+    mutate(var = substr(name, 1, 5)) %>%
+    select(var, Race) %>%
+    distinct()
 
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
@@ -142,12 +149,17 @@ run_aggregation <- function(
         filter(!(gridID %in% edge_codes)) %>%
         st_drop_geometry() %>%
         as.data.frame() %>%
-        mutate(A_sum = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-               B_sum = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-               C_sum = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-               D_sum = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE)) %>%
+        mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+               P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+               P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+               P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+               P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+               P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+               P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
         select(-all_of(variables)) %>%
-        county_pop_weight(variables = c("A_sum", "B_sum", "C_sum", "D_sum"), year = year)
+        county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+        pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+        left_join(var_info_abb, by = c("variable" = "var"))
 
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
@@ -201,12 +213,17 @@ run_aggregation <- function(
     mutate(year = year) %>%
     select(-variable)
   edge_weights <- edge_weights %>%
-    mutate(A_sum = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-           B_sum = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-           C_sum = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-           D_sum = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE)) %>%
+    mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+           P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+           P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+           P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+           P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+           P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE) %>%
     select(-all_of(variables)) %>%
-    county_pop_weight(variables = c("A_sum", "B_sum", "C_sum", "D_sum"), year = year)
+    county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+    pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+    left_join(var_info_abb, by = c("variable" = "var"))
 
   # write dissolved edges to final output files
   st_write(dissolved_edge, interior_outfile, append = TRUE)

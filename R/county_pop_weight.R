@@ -14,7 +14,7 @@ county_pop_weight <- function(
 
   # divide grid cell/county values by total grid cell population for each variable to get county proportions
   weight_data <- weight_data %>%
-    mutate(across(all_of(variables), ~ ifelse(get(paste0("grid_", cur_column())) == 0, 0, . / get(paste0("grid_", cur_column()))), .names = "wtd_{.col}"), .keep = "unused") %>%
+    mutate(across(all_of(variables), ~ ifelse(get(paste0("grid_", cur_column())) == 0, 0, . / get(paste0("grid_", cur_column()))), .names = "{.col}"), .keep = "unused") %>%
     mutate(year = year)
 
   return(weight_data)

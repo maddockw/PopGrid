@@ -42,5 +42,8 @@ run_aggregation(
 This function allows users to aggregate block-level population data from the decennial U.S. Census to a chosen grid definition. Users may provide a grid in the form of a shapefile or use the Census's county or tract grids. Other inputs allow the user control over allocation method, Census year and variables to use, and included U.S. states.
 }
 \examples{
-run_aggregation(mode = "county", year = 2010, states = c("MA", "RI", "CT", "ME", "NH", "VT"), output_name = "New England")
+run_aggregation(mode = "county",
+ year = 2010,
+ states = c("MA", "RI", "CT", "ME", "NH", "VT"),
+ output_name = "New England")
 }
