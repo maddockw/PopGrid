@@ -27,8 +27,8 @@ run_aggregation <- function(
     grid_path = NULL,
     grid_name = NULL,
     year = 2010,
-    variables,
-    area_weight = FALSE,
+    variables = NULL,
+    area_weight = TRUE,
     states = NULL,
     output_path = getwd(),
     output_name
@@ -47,6 +47,15 @@ run_aggregation <- function(
   NA_eq <- st_crs("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs")
 
   # load Census variable information and filter to just input variables
+  if (is.null(variables)){
+    variables <- load_variables(year = 2010, dataset = "sf1")
+    variables <- variables[grepl("P012[A-G]", variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
+    variables <- variables$name %>% unique
+    message("Using default Census variables")
+  } else {
+    message("Using provided list of Census variables")
+  }
+
   var_info <- load_variables(year = year, dataset = "sf1") %>% filter(name %in% variables)
   var_info <- var_info %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
     separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
@@ -87,6 +96,11 @@ run_aggregation <- function(
   # read in user grid and convert to correct CRS
   message("Aggregating population data to user-provided grid definition")
   user_grid <- st_read(dsn = grid_path, layer = grid_name) %>% st_transform(NA_eq)
+
+  # check that user_grid has columns with names "COL" and "ROW"
+  if (!("COL" %in% names(user_grid) && "ROW" %in% names(user_grid))){
+    stop("Provided grid must have the columns COL and ROW and the value pairs must be unique. Canceling...")
+  }
 
   # set up output files
   edge_outfile <- file.path(output_path, paste0("edge_merge", ".shp"))
@@ -203,7 +217,7 @@ run_aggregation <- function(
   # dissolve edges
   dissolved_edge <- full_edge %>%
     group_by(COL, ROW) %>%
-    summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))#summarize(pop = sum(pop, na.rm = T))
+    summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))
   rm(full_edge)
   edge_csv <- dissolved_edge %>%
     pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
@@ -219,7 +233,7 @@ run_aggregation <- function(
            P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
            P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
            P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
-           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE) %>%
+           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
     select(-all_of(variables)) %>%
     county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
     pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
