@@ -25,9 +25,9 @@ run_aggregation(
 
 \item{year}{A numeric value indicating the year of the desired Census data. Defaults to \code{2010}.}
 
-\item{variables}{A character vector indicating the Census variables to include. Use \code{\link[tidycensus:load_variables]{tidycensus::load_variables()}} to get information on Census variables.}
+\item{variables}{A character vector indicating the Census variables to include. Use \code{\link[tidycensus:load_variables]{tidycensus::load_variables()}} to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.}
 
-\item{area_weight}{A \code{TRUE/FALSE} value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, \code{area_weight = TRUE}) or a centroid approach (block population data are allocated to grid cells based on block centroids, \code{area_weight = FALSE}) to allocate block data to the chosen grid definition. Defaults to the centroid approach (\code{area_weight = FALSE}). Only used when \code{mode = "county"} or \code{"tract"}.}
+\item{area_weight}{A \code{TRUE/FALSE} value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, \code{area_weight = TRUE}) or a centroid approach (block population data are allocated to grid cells based on block centroids, \code{area_weight = FALSE}) to allocate block data to the chosen grid definition. Defaults to the area weighting approach (\code{area_weight = TRUE}). Only used when \code{mode = "county"} or \code{"tract"}.}
 
 \item{states}{A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.}
 

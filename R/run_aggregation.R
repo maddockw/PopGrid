@@ -7,8 +7,8 @@
 #' @param grid_path A character value representing the file path to the shapefile to use. Only used when `mode = "shapefile"`.
 #' @param grid_name A character value representing the name of the shapefile to use. Do not include file extension. Only used when `mode = "shapefile"`.
 #' @param year A numeric value indicating the year of the desired Census data. Defaults to `2010`.
-#' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables.
-#' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the centroid approach (`area_weight = FALSE`). Only used when `mode = "county"` or `"tract"`.
+#' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.
+#' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the area weighting approach (`area_weight = TRUE`). Only used when `mode = "county"` or `"tract"`.
 #' @param states A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.
 #' @param output_path A character value representing the file path to the output folder. Defaults to the current working directory (`output_path = getwd()`)
 #' @param output_name A character value representing the name to use for output files.
@@ -168,7 +168,7 @@ run_aggregation <- function(
                P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
                P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
                P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-               P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+               P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
                P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
         select(-all_of(variables)) %>%
         county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
@@ -232,7 +232,7 @@ run_aggregation <- function(
            P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
            P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
            P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-           P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+           P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
            P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
     select(-all_of(variables)) %>%
     county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%

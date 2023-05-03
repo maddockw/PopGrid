@@ -38,7 +38,7 @@ county_aggregation <- function(
            P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
            P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
            P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-           P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+           P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
            P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
     select(-all_of(variables), -NAME) %>%
     county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
