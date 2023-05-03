@@ -33,12 +33,17 @@ county_aggregation <- function(
   out_weights <- out_data %>%
     st_drop_geometry() %>%
     as.data.frame() %>%
-    mutate(A_sum = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-           B_sum = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-           C_sum = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-           D_sum = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE)) %>%
+    mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+           P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+           P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+           P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+           P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+           P012E = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
     select(-all_of(variables), -NAME) %>%
-    county_pop_weight(variables = c("A_sum", "B_sum", "C_sum", "D_sum"), year = year)
+    county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+    pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+    left_join(var_info_abb, by = c("variable" = "var"))
 
   # set up output files
   outfile <- file.path(output_path, paste0(output_name, ".shp"))

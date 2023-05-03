@@ -76,11 +76,11 @@ run_aggregation <- function(
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
-    output <- county_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
+    county_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
     return()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
-    output <- tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
+    tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
     return()
   }
 
