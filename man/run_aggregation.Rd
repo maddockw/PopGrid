@@ -9,8 +9,8 @@ run_aggregation(
   grid_path = NULL,
   grid_name = NULL,
   year = 2010,
-  variables,
-  area_weight = FALSE,
+  variables = NULL,
+  area_weight = TRUE,
   states = NULL,
   output_path = getwd(),
   output_name
