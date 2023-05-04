@@ -79,11 +79,13 @@ run_aggregation <- function(
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
     county_aggregation(states = states, year = year, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
-    return()
+    message("Aggregation complete, outputs saved")
+    silent_stop()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
     tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
-    return()
+    message("Aggregation complete, outputs saved")
+    silent_stop()
   }
 
   # if user has selected shapefile mode, continue
@@ -179,8 +181,6 @@ run_aggregation <- function(
 
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
-      diss_check <- diss_interior %>% select(COL, ROW, geometry)
-      print(diss_check)#WM
 
       # write output files
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
