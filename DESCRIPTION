@@ -1,12 +1,12 @@
 Package: PopGrid
 Imports: tidyverse, tidycensus, tigris, sf
 Depends: tidyverse, tidycensus, tigris, sf
-Title: What the Package Does (One Line, Title Case)
+Title: Allocate U.S. Census data to grids
 Version: 0.0.0.9000
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: A suite of functions to allocate block-level U.S. Census data on race, ethnicity, age, and sex to grid definitions of interest.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

@@ -3,32 +3,37 @@
 #' @description
 #' This function allows users to aggregate block-level population data from the decennial U.S. Census to a chosen grid definition. Users may provide a grid in the form of a shapefile or use the Census's county or tract grids. Other inputs allow the user control over allocation method, Census year and variables to use, and included U.S. states.
 #'
-#' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` amd `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
+#' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` and `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
 #' @param grid_path A character value representing the file path to the shapefile to use. Only used when `mode = "shapefile"`.
 #' @param grid_name A character value representing the name of the shapefile to use. Do not include file extension. Only used when `mode = "shapefile"`.
 #' @param year A numeric value indicating the year of the desired Census data. Defaults to `2010`.
-#' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables.
-#' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the centroid approach (`area_weight = FALSE`). Only used when `mode = "county"` or `"tract"`.
+#' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.
+#' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the area weighting approach (`area_weight = TRUE`). Only used when `mode = "county"` or `"tract"`.
 #' @param states A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.
 #' @param output_path A character value representing the file path to the output folder. Defaults to the current working directory (`output_path = getwd()`)
 #' @param output_name A character value representing the name to use for output files.
+#' @param overwrite A `TRUE/FALSE` value indicating whether to overwrite existing output files. Defaults to `FALSE`.
 #'
 #' @return [PopGrid::run_aggregation()] does not return a value, but instead saves three output files: a shapefile of the selected grid with population data, a CSV with the number of people in each grid cell for each of the race-ethnicity-gender-age demographic groups included in BenMAP, and a CSV with the fraction of the total population in each of the eight race-ethnic groups that comes from each U.S. county.
 #' @export
 #'
 #' @examples
-#' run_aggregation(mode = "county", year = 2010, states = c("MA", "RI", "CT", "ME", "NH", "VT"), output_name = "New England")
+#' run_aggregation(mode = "county",
+#'  year = 2010,
+#'  states = c("MA", "RI", "CT", "ME", "NH", "VT"),
+#'  output_name = "New England")
 
 run_aggregation <- function(
     mode = "shapefile",
     grid_path = NULL,
     grid_name = NULL,
     year = 2010,
-    variables,
-    area_weight = FALSE,
+    variables = NULL,
+    area_weight = TRUE,
     states = NULL,
     output_path = getwd(),
-    output_name
+    output_name,
+    overwrite = FALSE
 ){
   t1 <- Sys.time()
 
@@ -44,28 +49,43 @@ run_aggregation <- function(
   NA_eq <- st_crs("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs")
 
   # load Census variable information and filter to just input variables
+  if (is.null(variables)){
+    variables <- load_variables(year = 2010, dataset = "sf1")
+    variables <- variables[grepl("P012[A-G]", variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
+    variables <- variables$name %>% unique
+    message("Using default Census variables")
+  } else {
+    message("Using provided list of Census variables")
+  }
+
   var_info <- load_variables(year = year, dataset = "sf1") %>% filter(name %in% variables)
   var_info <- var_info %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
     separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
     mutate(Gender = toupper(Gender),
            AgeRange = gsub(" to ", "TO", AgeRange),
-           Race = str_extract(concept, "(?<=\\()[^)]+(?= ALONE\\))")) %>%
+           Race = str_extract(concept, "(?<=\\().*?(?=\\))")) %>%
     mutate(AgeRange = gsub(" years", "", AgeRange)) %>%
     mutate(AgeRange = gsub(" and over", "+", AgeRange)) %>%
     mutate(AgeRange = gsub(" and ", "TO", AgeRange)) %>%
     mutate(AgeRange = gsub("Under ", "0TO", AgeRange)) %>%
     mutate(Ethnicity = "ALL") %>%
     select(-concept)
+  var_info_abb <- var_info %>%
+    mutate(var = substr(name, 1, 5)) %>%
+    select(var, Race) %>%
+    distinct()
 
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
-    output <- county_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
-    return()
+    county_aggregation(states = states, year = year, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    message("Aggregation complete, outputs saved")
+    silent_stop()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
-    output <- tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
-    return()
+    tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    message("Aggregation complete, outputs saved")
+    silent_stop()
   }
 
   # if user has selected shapefile mode, continue
@@ -80,6 +100,11 @@ run_aggregation <- function(
   # read in user grid and convert to correct CRS
   message("Aggregating population data to user-provided grid definition")
   user_grid <- st_read(dsn = grid_path, layer = grid_name) %>% st_transform(NA_eq)
+
+  # check that user_grid has columns with names "COL" and "ROW"
+  if (!("COL" %in% names(user_grid) && "ROW" %in% names(user_grid))){
+    stop("Provided grid must have the columns COL and ROW and the value pairs must be unique. Canceling...")
+  }
 
   # set up output files
   edge_outfile <- file.path(output_path, paste0("edge_merge", ".shp"))
@@ -142,12 +167,17 @@ run_aggregation <- function(
         filter(!(gridID %in% edge_codes)) %>%
         st_drop_geometry() %>%
         as.data.frame() %>%
-        mutate(A_sum = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-               B_sum = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-               C_sum = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-               D_sum = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE)) %>%
+        mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+               P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+               P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+               P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+               P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+               P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+               P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
         select(-all_of(variables)) %>%
-        county_pop_weight(variables = c("A_sum", "B_sum", "C_sum", "D_sum"), year = year)
+        county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+        pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+        left_join(var_info_abb, by = c("variable" = "var"))
 
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
@@ -155,12 +185,10 @@ run_aggregation <- function(
       # write output files
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
-          overwrite <- readline("One or more output files already exist. Type 1 to overwrite existing file or type 0 to cancel output: ") %>%
-            as.integer() %>%
-            as.logical
           if (!overwrite){
-            stop("Canceling...")
+            stop("One or more output files already exist and overwrite is set to FALSE. Canceling...")
           } else{
+            message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
             st_write(diss_edge, edge_outfile, delete_layer = overwrite, quiet = TRUE)
             st_write(diss_interior, interior_outfile, delete_layer = overwrite, quiet = TRUE)
             write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
@@ -191,8 +219,9 @@ run_aggregation <- function(
   # dissolve edges
   dissolved_edge <- full_edge %>%
     group_by(COL, ROW) %>%
-    summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))#summarize(pop = sum(pop, na.rm = T))
+    summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))
   rm(full_edge)
+
   edge_csv <- dissolved_edge %>%
     pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
     st_drop_geometry() %>%
@@ -201,12 +230,17 @@ run_aggregation <- function(
     mutate(year = year) %>%
     select(-variable)
   edge_weights <- edge_weights %>%
-    mutate(A_sum = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-           B_sum = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-           C_sum = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-           D_sum = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE)) %>%
+    mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+           P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+           P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+           P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+           P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+           P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
     select(-all_of(variables)) %>%
-    county_pop_weight(variables = c("A_sum", "B_sum", "C_sum", "D_sum"), year = year)
+    county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+    pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+    left_join(var_info_abb, by = c("variable" = "var"))
 
   # write dissolved edges to final output files
   st_write(dissolved_edge, interior_outfile, append = TRUE)
