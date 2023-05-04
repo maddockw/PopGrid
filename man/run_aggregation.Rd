@@ -13,11 +13,12 @@ run_aggregation(
   area_weight = TRUE,
   states = NULL,
   output_path = getwd(),
-  output_name
+  output_name,
+  overwrite = FALSE
 )
 }
 \arguments{
-\item{mode}{A character value indicating the type of grid to use for aggregation, one of \code{c("shapefile", "county", "tract")}. Defaults to using user-specified shapefile (\code{mode = "shapefile"}). \code{"county"} amd \code{"tract"} options instead use U.S. Census-defined county and tract shapes, respectively.}
+\item{mode}{A character value indicating the type of grid to use for aggregation, one of \code{c("shapefile", "county", "tract")}. Defaults to using user-specified shapefile (\code{mode = "shapefile"}). \code{"county"} and \code{"tract"} options instead use U.S. Census-defined county and tract shapes, respectively.}
 
 \item{grid_path}{A character value representing the file path to the shapefile to use. Only used when \code{mode = "shapefile"}.}
 
@@ -34,6 +35,8 @@ run_aggregation(
 \item{output_path}{A character value representing the file path to the output folder. Defaults to the current working directory (\code{output_path = getwd()})}
 
 \item{output_name}{A character value representing the name to use for output files.}
+
+\item{overwrite}{A \code{TRUE/FALSE} value indicating whether to overwrite existing output files. Defaults to \code{FALSE}.}
 }
 \value{
 \code{\link[=run_aggregation]{run_aggregation()}} does not return a value, but instead saves three output files: a shapefile of the selected grid with population data, a CSV with the number of people in each grid cell for each of the race-ethnicity-gender-age demographic groups included in BenMAP, and a CSV with the fraction of the total population in each of the eight race-ethnic groups that comes from each U.S. county.

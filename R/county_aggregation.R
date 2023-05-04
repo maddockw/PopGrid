@@ -3,9 +3,11 @@ county_aggregation <- function(
     year = 2010,
     variables,
     var_info,
+    var_info_abb,
     output_path = getwd(),
     crs = NULL,
-    output_name
+    output_name,
+    overwrite = FALSE
 ){
   # read in Census data at the county level
   raw_data <- suppressMessages(get_decennial(geography = "county",
@@ -51,17 +53,14 @@ county_aggregation <- function(
   weights_outfile <- file.path(output_path, paste0(output_name, "_weights", ".csv"))
 
   # write output files
-  if (file.exists(outfile)){
-    overwrite <- readline("One or more output files already exist. Type 1 to overwrite existing file or type 0 to cancel output: ") %>%
-      as.integer() %>%
-      as.logical
+  if (file.exists(outfile)|| file.exists(csv_outfile) || file.exists(weights_outfile)){
     if (!overwrite){
-      return()
+      stop("One or more output files already exist and overwrite is set to FALSE. Canceling...")
     } else{
+      message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
       st_write(out_data, outfile, delete_layer = overwrite, quiet = TRUE)
       write.table(out_csv, file = csv_outfile, row.names = FALSE, sep = ",")
       write.table(out_weights, file = weights_outfile, row.names = FALSE, sep = ",")
-      return()
     }
   } else{
     st_write(out_data, outfile, quiet = TRUE)

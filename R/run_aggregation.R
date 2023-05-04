@@ -3,7 +3,7 @@
 #' @description
 #' This function allows users to aggregate block-level population data from the decennial U.S. Census to a chosen grid definition. Users may provide a grid in the form of a shapefile or use the Census's county or tract grids. Other inputs allow the user control over allocation method, Census year and variables to use, and included U.S. states.
 #'
-#' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` amd `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
+#' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` and `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
 #' @param grid_path A character value representing the file path to the shapefile to use. Only used when `mode = "shapefile"`.
 #' @param grid_name A character value representing the name of the shapefile to use. Do not include file extension. Only used when `mode = "shapefile"`.
 #' @param year A numeric value indicating the year of the desired Census data. Defaults to `2010`.
@@ -12,6 +12,7 @@
 #' @param states A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.
 #' @param output_path A character value representing the file path to the output folder. Defaults to the current working directory (`output_path = getwd()`)
 #' @param output_name A character value representing the name to use for output files.
+#' @param overwrite A `TRUE/FALSE` value indicating whether to overwrite existing output files. Defaults to `FALSE`.
 #'
 #' @return [PopGrid::run_aggregation()] does not return a value, but instead saves three output files: a shapefile of the selected grid with population data, a CSV with the number of people in each grid cell for each of the race-ethnicity-gender-age demographic groups included in BenMAP, and a CSV with the fraction of the total population in each of the eight race-ethnic groups that comes from each U.S. county.
 #' @export
@@ -31,7 +32,8 @@ run_aggregation <- function(
     area_weight = TRUE,
     states = NULL,
     output_path = getwd(),
-    output_name
+    output_name,
+    overwrite = FALSE
 ){
   t1 <- Sys.time()
 
@@ -76,11 +78,11 @@ run_aggregation <- function(
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
-    county_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
+    county_aggregation(states = states, year = year, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     return()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
-    tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, crs = NA_eq, output_name = output_name)
+    tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     return()
   }
 
@@ -177,16 +179,16 @@ run_aggregation <- function(
 
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
+      diss_check <- diss_interior %>% select(COL, ROW, geometry)
+      print(diss_check)#WM
 
       # write output files
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
-          overwrite <- readline("One or more output files already exist. Type 1 to overwrite existing file or type 0 to cancel output: ") %>%
-            as.integer() %>%
-            as.logical
           if (!overwrite){
-            stop("Canceling...")
+            stop("One or more output files already exist and overwrite is set to FALSE. Canceling...")
           } else{
+            message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
             st_write(diss_edge, edge_outfile, delete_layer = overwrite, quiet = TRUE)
             st_write(diss_interior, interior_outfile, delete_layer = overwrite, quiet = TRUE)
             write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
@@ -219,6 +221,7 @@ run_aggregation <- function(
     group_by(COL, ROW) %>%
     summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))
   rm(full_edge)
+
   edge_csv <- dissolved_edge %>%
     pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
     st_drop_geometry() %>%
