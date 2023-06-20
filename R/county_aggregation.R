@@ -1,6 +1,7 @@
 county_aggregation <- function(
     states = NULL,
-    year = 2010,
+    year = 2020,
+    census_file = "dhc",
     variables,
     var_info,
     var_info_abb,
@@ -13,6 +14,7 @@ county_aggregation <- function(
   raw_data <- suppressMessages(get_decennial(geography = "county",
                                              variables = variables,
                                              state = states,
+                                             sumfile = census_file,
                                              year = year,
                                              cb = FALSE,
                                              geometry = TRUE,
@@ -32,20 +34,44 @@ county_aggregation <- function(
     mutate(year = year)
 
   # generate weights
-  out_weights <- out_data %>%
-    st_drop_geometry() %>%
-    as.data.frame() %>%
-    mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-           P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-           P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-           P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
-           P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-           P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
-           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
-    select(-all_of(variables), -NAME) %>%
-    county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
-    pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
-    left_join(var_info_abb, by = c("variable" = "var"))
+  if (year == 2020){
+    out_weights <- out_data %>%
+      st_drop_geometry() %>%
+      as.data.frame() %>%
+      mutate(P012I = rowSums(select(., matches("^P12I\\d{3}N")), na.rm = TRUE),
+             P012J = rowSums(select(., matches("^P12J\\d{3}N")), na.rm = TRUE),
+             P012K = rowSums(select(., matches("^P12K\\d{3}N")), na.rm = TRUE),
+             P012L = rowSums(select(., matches("^P12L\\d{3}N")), na.rm = TRUE),
+             P012M = rowSums(select(., matches("^P12M\\d{3}N")), na.rm = TRUE),
+             P012N = rowSums(select(., matches("^P12N\\d{3}N")), na.rm = TRUE),
+             P012O = rowSums(select(., matches("^P12O\\d{3}N")), na.rm = TRUE),
+             P012P = rowSums(select(., matches("^P12P\\d{3}N")), na.rm = TRUE),
+             P012Q = rowSums(select(., matches("^P12Q\\d{3}N")), na.rm = TRUE),
+             P012R = rowSums(select(., matches("^P12R\\d{3}N")), na.rm = TRUE),
+             P012S = rowSums(select(., matches("^P12S\\d{3}N")), na.rm = TRUE),
+             P012T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
+             P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
+             P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
+      select(-all_of(variables), -NAME) %>%
+      county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+      pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
+      left_join(var_info_abb, by = c("variable" = "var"))
+  } else {
+    out_weights <- out_data %>%
+      st_drop_geometry() %>%
+      as.data.frame() %>%
+      mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+             P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+             P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+             P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+             P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+             P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+             P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
+      select(-all_of(variables), -NAME) %>%
+      county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+      pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+      left_join(var_info_abb, by = c("variable" = "var"))
+  }
 
   # set up output files
   outfile <- file.path(output_path, paste0(output_name, ".shp"))

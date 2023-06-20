@@ -6,7 +6,7 @@
 #' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` and `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
 #' @param grid_path A character value representing the file path to the shapefile to use. Only used when `mode = "shapefile"`.
 #' @param grid_name A character value representing the name of the shapefile to use. Do not include file extension. Only used when `mode = "shapefile"`.
-#' @param year A numeric value indicating the year of the desired Census data. Defaults to `2010`.
+#' @param year A numeric value indicating the year of the desired Census data. Defaults to `2020`.
 #' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.
 #' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the area weighting approach (`area_weight = TRUE`). Only used when `mode = "county"` or `"tract"`.
 #' @param states A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.
@@ -19,7 +19,7 @@
 #'
 #' @examples
 #' run_aggregation(mode = "county",
-#'  year = 2010,
+#'  year = 2020,
 #'  states = c("MA", "RI", "CT", "ME", "NH", "VT"),
 #'  output_name = "New England")
 
@@ -27,7 +27,7 @@ run_aggregation <- function(
     mode = "shapefile",
     grid_path = NULL,
     grid_name = NULL,
-    year = 2010,
+    year = 2020,
     variables = NULL,
     area_weight = TRUE,
     states = NULL,
@@ -45,21 +45,33 @@ run_aggregation <- function(
     message("Using provided list of states")
   }
 
+  # set summary file for the selected year
+  if (year == 2020){
+    census_file <- "dhc"
+  } else {
+    census_file = "sf1"
+  }
+
   # set CRS to BenMAP default input
   NA_eq <- st_crs("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs")
 
   # load Census variable information and filter to just input variables
   if (is.null(variables)){
-    variables <- load_variables(year = 2010, dataset = "sf1")
-    variables <- variables[grepl("P012[A-G]", variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
-    variables <- variables$name %>% unique
     message("Using default Census variables")
+    variables <- load_variables(year = year, dataset = census_file)
+    if (year == 2020){
+      variables <- variables[grepl("P12[I-V]", variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
+      variables <- variables$name %>% unique
+    } else {
+      variables <- variables[grepl("P012[A-G]", variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
+      variables <- variables$name %>% unique
+    }
   } else {
     message("Using provided list of Census variables")
   }
 
-  var_info <- load_variables(year = year, dataset = "sf1") %>% filter(name %in% variables)
-  var_info <- var_info %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
+  var_info <- load_variables(year = year, dataset = census_file) %>% filter(name %in% variables)
+  var_info <- var_info %>% #filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
     separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
     mutate(Gender = toupper(Gender),
            AgeRange = gsub(" to ", "TO", AgeRange),
@@ -78,12 +90,12 @@ run_aggregation <- function(
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
-    county_aggregation(states = states, year = year, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    county_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     message("Aggregation complete, outputs saved")
     silent_stop()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
-    tract_aggregation(states = states, year = year, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    tract_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     message("Aggregation complete, outputs saved")
     silent_stop()
   }
@@ -125,6 +137,7 @@ run_aggregation <- function(
                                                        state = state,
                                                        county = county,
                                                        year = year,
+                                                       sumfile = census_file,
                                                        output = "wide",
                                                        cb = FALSE,
                                                        geometry = TRUE
@@ -163,21 +176,46 @@ run_aggregation <- function(
         left_join(var_info, by = c("variable" = "name")) %>%
         select(-gridID, -variable) %>%
         mutate(year = year)
-      weights_interior <- weights %>%
-        filter(!(gridID %in% edge_codes)) %>%
-        st_drop_geometry() %>%
-        as.data.frame() %>%
-        mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-               P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-               P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-               P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
-               P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-               P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
-               P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
-        select(-all_of(variables)) %>%
-        county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
-        pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
-        left_join(var_info_abb, by = c("variable" = "var"))
+      if (year == 2020){
+        weights_interior <- weights %>%
+          filter(!(gridID %in% edge_codes)) %>%
+          st_drop_geometry() %>%
+          as.data.frame() %>%
+          mutate(P012I = rowSums(select(., matches("^P12I\\d{3}N")), na.rm = TRUE),
+                 P012J = rowSums(select(., matches("^P12J\\d{3}N")), na.rm = TRUE),
+                 P012K = rowSums(select(., matches("^P12K\\d{3}N")), na.rm = TRUE),
+                 P012L = rowSums(select(., matches("^P12L\\d{3}N")), na.rm = TRUE),
+                 P012M = rowSums(select(., matches("^P12M\\d{3}N")), na.rm = TRUE),
+                 P012N = rowSums(select(., matches("^P12N\\d{3}N")), na.rm = TRUE),
+                 P012O = rowSums(select(., matches("^P12O\\d{3}N")), na.rm = TRUE),
+                 P012P = rowSums(select(., matches("^P12P\\d{3}N")), na.rm = TRUE),
+                 P012Q = rowSums(select(., matches("^P12Q\\d{3}N")), na.rm = TRUE),
+                 P012R = rowSums(select(., matches("^P12R\\d{3}N")), na.rm = TRUE),
+                 P012S = rowSums(select(., matches("^P12S\\d{3}N")), na.rm = TRUE),
+                 P012T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
+                 P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
+                 P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
+          select(-all_of(variables)) %>%
+          county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+          pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
+          left_join(var_info_abb, by = c("variable" = "var"))
+      } else{
+        weights_interior <- weights %>%
+          filter(!(gridID %in% edge_codes)) %>%
+          st_drop_geometry() %>%
+          as.data.frame() %>%
+          mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+                 P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+                 P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+                 P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+                 P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+                 P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+                 P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
+          select(-all_of(variables)) %>%
+          county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+          pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+          left_join(var_info_abb, by = c("variable" = "var"))
+      }
 
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
@@ -229,18 +267,40 @@ run_aggregation <- function(
     left_join(var_info, by = c("variable" = "name")) %>%
     mutate(year = year) %>%
     select(-variable)
-  edge_weights <- edge_weights %>%
-    mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-           P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-           P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-           P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
-           P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-           P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
-           P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
-    select(-all_of(variables)) %>%
-    county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
-    pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
-    left_join(var_info_abb, by = c("variable" = "var"))
+  if (year == 2020){
+    edge_weights <- edge_weights %>%
+      mutate(P012I = rowSums(select(., matches("^P12I\\d{3}N")), na.rm = TRUE),
+             P012J = rowSums(select(., matches("^P12J\\d{3}N")), na.rm = TRUE),
+             P012K = rowSums(select(., matches("^P12K\\d{3}N")), na.rm = TRUE),
+             P012L = rowSums(select(., matches("^P12L\\d{3}N")), na.rm = TRUE),
+             P012M = rowSums(select(., matches("^P12M\\d{3}N")), na.rm = TRUE),
+             P012N = rowSums(select(., matches("^P12N\\d{3}N")), na.rm = TRUE),
+             P012O = rowSums(select(., matches("^P12O\\d{3}N")), na.rm = TRUE),
+             P012P = rowSums(select(., matches("^P12P\\d{3}N")), na.rm = TRUE),
+             P012Q = rowSums(select(., matches("^P12Q\\d{3}N")), na.rm = TRUE),
+             P012R = rowSums(select(., matches("^P12R\\d{3}N")), na.rm = TRUE),
+             P012S = rowSums(select(., matches("^P12S\\d{3}N")), na.rm = TRUE),
+             P012T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
+             P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
+             P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
+      select(-all_of(variables)) %>%
+      county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+      pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
+      left_join(var_info_abb, by = c("variable" = "var"))
+  } else{
+    edge_weights <- edge_weights %>%
+      mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
+            P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+            P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+            P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+            P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+            P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+            P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
+      select(-all_of(variables)) %>%
+      county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
+      pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
+      left_join(var_info_abb, by = c("variable" = "var"))
+  }
 
   # write dissolved edges to final output files
   st_write(dissolved_edge, interior_outfile, append = TRUE)
