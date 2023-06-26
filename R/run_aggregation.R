@@ -58,12 +58,14 @@ run_aggregation <- function(
   # load Census variable information and filter to just input variables
   if (is.null(variables)){
     message("Using default Census variables")
-    variables <- load_variables(year = year, dataset = census_file)
+    all_variables <- load_variables(year = year, dataset = census_file)
     if (year == 2020){
-      variables <- variables[grepl("P12[I-V]", variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
+      variables <- all_variables[grepl("P12[I-V]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
       variables <- variables$name %>% unique
+      tract_vars <- all_variables[grepl("PCT12[A-G]", all_variables$name),] %>% filter(substr(name, nchar(name) - 3, nchar(name)) %in% c("003N", "004N", "005N", "006N", "007N", "107N", "108N", "109N", "110N", "111N"))
+      tract_vars <- tract_vars$name %>% unique
     } else {
-      variables <- variables[grepl("P012[A-G]", variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
+      variables <- all_variables[grepl("P012[A-G]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
       variables <- variables$name %>% unique
     }
   } else {
@@ -107,7 +109,7 @@ run_aggregation <- function(
                            year = year,
                            class = "sf"
   ) %>% st_transform(NA_eq)
-  state_FIPS <- county_state$STATEFP10 %>% unique
+  state_FIPS <- county_state$STATEFP %>% unique
 
   # read in user grid and convert to correct CRS
   message("Aggregating population data to user-provided grid definition")
@@ -127,8 +129,8 @@ run_aggregation <- function(
 
   # iterate across states and counties
   state_FIPS %>% lapply(function(state){
-    state_counties <- county_state %>% filter(STATEFP10 == state)
-    county_names <- state_counties$COUNTYFP10 %>% unique
+    state_counties <- county_state %>% filter(STATEFP == state)
+    county_names <- state_counties$COUNTYFP %>% unique
 
     county_names %>% lapply(function(county){
       # read in block-level data for the county
@@ -143,8 +145,10 @@ run_aggregation <- function(
                                                        geometry = TRUE
       )) %>% st_transform(NA_eq)
 
+      raw_block_data <- raw_block_data %>% zero_bin(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
+
       # grab county shape and subset user grid to cells that overlap county
-      county_shape <- county_state %>% filter(STATEFP10 == state & COUNTYFP10 == county)
+      county_shape <- county_state %>% filter(STATEFP == state & COUNTYFP == county)
       county_grid <- user_grid[county_shape,]
 
       # run spatial analysis using helper functions based on user's selected allocation method
@@ -224,7 +228,7 @@ run_aggregation <- function(
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
           if (!overwrite){
-            stop("One or more output files already exist and overwrite is set to FALSE. Canceling...")
+            stop("One or more output files already exist and overwrite is set to FALSE. Canceling...", call. = FALSE)
           } else{
             message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
             st_write(diss_edge, edge_outfile, delete_layer = overwrite, quiet = TRUE)
