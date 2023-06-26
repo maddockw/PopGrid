@@ -1,3 +1,5 @@
+#' @export
+
 zero_bin <- function(
     block_data = NULL,
     year = 2020,
@@ -91,6 +93,6 @@ zero_bin <- function(
   }
 
   # remove tract columns and return
-  block_data <- block_data %>% select(-c(names(tract), "tractID"))
+  block_data <- block_data %>% select(-c(setdiff(names(tract), "GEOID"), "tractID"))
   return(block_data)
 }

@@ -37,6 +37,18 @@ run_aggregation <- function(
 ){
   t1 <- Sys.time()
 
+  detectCores()
+  n_cores <- detectCores() - 2
+  my_cluster <- makeCluster(n_cores, type = "PSOCK")
+  #clusterEvalQ(my_cluster, c(library(tidyverse), library(sf), library(tidycensus), library(PopGrid)))
+  clusterEvalQ(my_cluster, {
+    remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
+    library(PopGrid)
+    library(tidyverse)
+    library(sf)
+    library(tidycensus)
+  })
+
   # message user about which states are being included
   if (is.null(states)){
     states <- state.abb[!state.abb %in% c("AK", "HI")] %>% append("DC")
@@ -132,7 +144,7 @@ run_aggregation <- function(
     state_counties <- county_state %>% filter(STATEFP == state)
     county_names <- state_counties$COUNTYFP %>% unique
 
-    county_names %>% lapply(function(county){
+    county_names %>% parLapply(my_cluster, ., function(county){
       # read in block-level data for the county
       raw_block_data <- suppressMessages(get_decennial(geography = "block",
                                                        variables = variables,
