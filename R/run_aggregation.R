@@ -37,19 +37,6 @@ run_aggregation <- function(
 ){
   t1 <- Sys.time()
 
-  detectCores()
-  n_cores <- detectCores() - 2
-  my_cluster <- makeCluster(n_cores, type = "PSOCK")
-  #clusterEvalQ(my_cluster, c(library(tidyverse), library(sf), library(tidycensus), library(PopGrid)))
-  clusterEvalQ(my_cluster, {
-    remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
-    library(PopGrid)
-    library(tidyverse)
-    library(sf)
-    library(tidycensus)
-    library(flock)
-  })
-
   # message user about which states are being included
   if (is.null(states)){
     states <- state.abb[!state.abb %in% c("AK", "HI")] %>% append("DC")
@@ -144,6 +131,22 @@ run_aggregation <- function(
   state_FIPS %>% lapply(function(state){
     state_counties <- county_state %>% filter(STATEFP == state)
     county_names <- state_counties$COUNTYFP %>% unique
+
+    # set up cluster to do parallel processing
+    if (detectCores <= 0){
+      n_cores = 1
+    } else {
+      n_cores <- detectCores() - 2
+    }
+    my_cluster <- makeCluster(n_cores, type = "PSOCK")
+    clusterEvalQ(my_cluster, {
+      remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
+      library(PopGrid)
+      library(tidyverse)
+      library(sf)
+      library(tidycensus)
+      library(flock)
+    })
 
     county_names %>% parLapply(my_cluster, ., function(county){
       # read in block-level data for the county
@@ -268,6 +271,7 @@ run_aggregation <- function(
       }
       unlock(l1)
     })
+    stopCluster(my_cluster)
   })
 
   # read in edges
