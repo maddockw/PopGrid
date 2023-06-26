@@ -47,6 +47,7 @@ run_aggregation <- function(
     library(tidyverse)
     library(sf)
     library(tidycensus)
+    library(flock)
   })
 
   # message user about which states are being included
@@ -237,6 +238,8 @@ run_aggregation <- function(
       diss_interior <- diss_interior %>% select(-gridID)
 
       # write output files
+      lock_file <- file.path(output_path, paste0("lock", ".txt"))
+      l1 <- lock(lock_file, exclusive = TRUE)
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
           if (!overwrite){
@@ -263,6 +266,7 @@ run_aggregation <- function(
         write.table(weights_interior, file = weights_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
         write.table(weights_edge, file = edge_weights_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
       }
+      unlock(l1)
     })
   })
 
