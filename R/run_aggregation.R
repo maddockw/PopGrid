@@ -133,7 +133,7 @@ run_aggregation <- function(
     county_names <- state_counties$COUNTYFP %>% unique
 
     # set up cluster to do parallel processing
-    if (detectCores <= 0){
+    if (detectCores() <= 0){
       n_cores = 1
     } else {
       n_cores <- detectCores() - 2
