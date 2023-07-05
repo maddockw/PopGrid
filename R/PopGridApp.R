@@ -10,17 +10,6 @@
 #' PopGridApp()
 #'
 
-#mode = "shapefile",
-  #grid_path = NULL,
-  #grid_name = NULL,
-#year = 2010,
-#variables = NULL,
-#area_weight = TRUE,
-  #states = NULL,
-#output_path = getwd(),
-#output_name,
-#overwrite = FALSE
-
 PopGridApp <- function(){
   ui <- fluidPage(
     titlePanel("PopGrid"),
@@ -29,7 +18,7 @@ PopGridApp <- function(){
         HTML("<h3>Inputs</h3>"),
         selectInput("mode", "Select a mode", choices = c("Shapefile", "County", "Tract"), width = "100%"),
         selectInput("year", "Select a year", choices = c(2010, 2020), selected = 2020, width = "100%"),
-        selectInput("method", "Select an aggregation method", choices = c("Area weighting", "Centroids"), selected = "Area weighting", width = "100%"),
+        #selectInput("method", "Select an aggregation method", choices = c("Area weighting", "Centroids"), selected = "Area weighting", width = "100%"),
         selectInput("states", "States to include", choices = c("All CONUS states", "Select a subset of states"), selected = "All CONUS states", width = "100%"),
         ###
         HTML("<p><strong>Provide the file path where you would like to save outputs</strong></p>"),
@@ -74,7 +63,7 @@ PopGridApp <- function(){
             #textInput("grid_name", "Provide the name of your grid shapefile (without file extension)", placeholder = "Grid shapefile name", width = "100%"),
             "Select input grid shapefile:",
             shinyFilesButton("input_file", label = "Browse", title = "Select input grid shapefile", multiple = FALSE),
-            textOutput("selected_input_path")
+            textOutput("selected_input_file")
             )
           },
         if (input$states == "Select a subset of states") {
@@ -105,24 +94,31 @@ PopGridApp <- function(){
       }
     })
 
+    cond_tab_values <- reactiveValues(input_file = NULL, input_states = NULL)
+    observeEvent(input$input_file, {
+      cond_tab_values$input_file <- parseFilePaths(roots = c(wd = getwd(), home = "~"), input$input_file)$datapath
+    })
+    observeEvent(input$state_select, {
+      cond_tab_values$input_states <- input$state_select
+    })
+
     shinyFileChoose(input, "input_file", roots= c(wd = ".", home = "~"), filetypes = c("", "shp"))
     observeEvent(input$input_file, {
-      shinyFile <- parseDirPath(roots = c(wd = getwd(), home = "~"), input$input_file)
+      shinyFile <- parseFilePaths(roots = c(wd = getwd(), home = "~"), input$input_file)$datapath
 
       if (exists("shinyFile")){
-        output$selected_input_path <- renderText({
+        output$selected_input_file <- renderText({
           paste0("Selected file: ", shinyFile)
         })
         }
     })
 
     observeEvent(input$run, {
-      #message(input$state_select)
-      if (input$states == "Select a subset of states" & is.null(input$state_select)) {
+      if (input$states == "Select a subset of states" & is.null(cond_tab_values$input_states)) {
         showModal(
           modalDialog(
             title = "Error",
-            HTML("Please choose states on the <em>Select States</em> tab or change States to include input to <strong>All CONUS states</strong>."),
+            HTML("Please choose state(s) on the <em>Select States</em> tab or change States to include input to <strong>All CONUS states</strong>."),
             easyClose = TRUE,
             scrollable = FALSE
           )
@@ -131,12 +127,13 @@ PopGridApp <- function(){
     })
 
     observeEvent(input$run, {
-      #message(input$input_file)
-      if (input$mode == "Shapefile" & !(typeof(input$input_file) == "list")) {
+      if (input$mode == "Shapefile" & (((is.character(cond_tab_values$input_file)) & length(cond_tab_values$input_file) == 0) | is.null(cond_tab_values$input_file))) {
+        message(typeof(cond_tab_values$input_file))
+        message(length(cond_tab_values$input_file))
         showModal(
           modalDialog(
             title = "Error",
-            HTML("Please provide input grid name and path on the <em>Shapefile Selection</em> tab or change Mode input to <strong>County</strong> or <strong>Tract</strong>."),
+            HTML("Please select input grid on the <em>Shapefile Selection</em> tab or change Mode input to <strong>County</strong> or <strong>Tract</strong>."),
             easyClose = TRUE,
             scrollable = FALSE
           )
@@ -147,10 +144,10 @@ PopGridApp <- function(){
     observeEvent(input$run, {
       message("inputs are:")
       message("mode = ", input$mode)
-      message("in_path = ", input$input_file)
+      message("in_path = ", cond_tab_values$input_file)
       message("year = ", input$year)
       message("method = ",  input$method)
-      message("state = ",  input$state_select)
+      message("state = ",  cond_tab_values$input_states)
       message("out_path = ", input$out_path)
       message("out_name = ", input$outfile_name)
       message("overwrite = ",  input$overwrite)
