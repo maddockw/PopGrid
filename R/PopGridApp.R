@@ -14,23 +14,44 @@ PopGridApp <- function(){
   ui <- fluidPage(
     titlePanel("PopGrid"),
     sidebarLayout(
+
+      # Sidebar input pane UI
       sidebarPanel(
         HTML("<h3>Inputs</h3>"),
-        selectInput("mode", "Select a mode", choices = c("Shapefile", "County", "Tract"), width = "100%"),
-        selectInput("year", "Select a year", choices = c(2010, 2020), selected = 2020, width = "100%"),
+        selectInput("mode",
+                    "Select a mode",
+                    choices = list("Shapefile" = "shapefile", "County" = "county", "Tract" = "tract"),
+                    width = "100%"),
+        selectInput("year",
+                    "Select a year",
+                    choices = c(2010, 2020),
+                    selected = 2020,
+                    width = "100%"),
         #selectInput("method", "Select an aggregation method", choices = c("Area weighting", "Centroids"), selected = "Area weighting", width = "100%"),
-        selectInput("states", "States to include", choices = c("All CONUS states", "Select a subset of states"), selected = "All CONUS states", width = "100%"),
-        ###
+        selectInput("states",
+                    "States to include",
+                    choices = c("All CONUS states", "Select a subset of states"),
+                    selected = "All CONUS states",
+                    width = "100%"),
         HTML("<p><strong>Provide the file path where you would like to save outputs</strong></p>"),
-        shinyDirButton("output_path", label = "Browse", title = "Select output path", multiple = FALSE),
+        shinyDirButton("output_path",
+                       label = "Browse",
+                       title = "Select output path",
+                       multiple = FALSE),
         textOutput("selected_output_path"),
         HTML("<br>"),
-        ###
-        #textInput("out_path", "Provide the file path where you would like to save outputs", placeholder = "Output folder path", width = "100%"),
-        textInput("outfile_name", "Provide a name for the output files (without file extension)", placeholder = "Output file name", width = "100%"),
-        checkboxInput("overwrite", "Overwrite existing output files of the same name in the output folder?", value = FALSE, width = "100%"),
+        textInput("outfile_name",
+                  "Provide a name for the output files (without file extension)",
+                  placeholder = "Output file name",
+                  width = "100%"),
+        checkboxInput("overwrite",
+                      "Overwrite existing output files of the same name in the output folder?",
+                      value = FALSE,
+                      width = "100%"),
         actionButton("run", "Run PopGrid")
       ),
+
+      # Main panel tabset is rendered conditionally by code in the server below based on inputs
       mainPanel(
         uiOutput("conditionalTabs")
       )
@@ -38,6 +59,8 @@ PopGridApp <- function(){
     )
 
   server <- function(input, output, session){
+
+    # This code renders the main panel tabset in the UI
     output$conditionalTabs <- renderUI({
       tabsetPanel(
         tabPanel(
@@ -49,27 +72,29 @@ PopGridApp <- function(){
                "<h4>Year</h4>
                 <p>Indicates the U.S. decennial Census year to use for population allocation.</p>
                 <br>",
-               "<h4>Aggregation Method</h4>
-                <p>The <strong>Area Weighting</strong> approach allocates block population data to grid cells based on area proportion. This is the recommended approach.</p>
-                <p>The <strong>Centroid</strong> approach allocates block population data to grid cells based on block centroids.</p>
-                <br>",
+               #"<h4>Aggregation Method</h4>
+                #<p>The <strong>Area Weighting</strong> approach allocates block population data to grid cells based on area proportion. This is the recommended approach.</p>
+                #<p>The <strong>Centroid</strong> approach allocates block population data to grid cells based on block centroids.</p>
+                #<br>",
                "<h4>States</h4>
                 <p>Allocation can be done for <strong>All CONUS states</strong>, which includes all of the contiguous U.S. If you only need population data for a subset of states, you can <strong>Select a subset of states</strong> on the <em>State Selection</em> tab instead.</p>")
         ),
-        if (input$mode == "Shapefile") {
+        if (input$mode == "shapefile") {
           tabPanel(
             "Shapefile Selection",
-            #textInput("grid_path", "Provide the file path for the folder containing your grid shapefile", placeholder = "Path to grid", width = "100%"),
-            #textInput("grid_name", "Provide the name of your grid shapefile (without file extension)", placeholder = "Grid shapefile name", width = "100%"),
             "Select input grid shapefile:",
-            shinyFilesButton("input_file", label = "Browse", title = "Select input grid shapefile", multiple = FALSE),
+            shinyFilesButton("input_file",
+                             label = "Browse",
+                             title = "Select input grid shapefile",
+                             multiple = FALSE),
             textOutput("selected_input_file")
             )
           },
         if (input$states == "Select a subset of states") {
           tabPanel(
             "State Selection",
-            selectInput("state_select", "Select all states to include",
+            selectInput("state_select",
+                        "Select all states to include",
                         choices = c("Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware",
                                     "Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky",
                                     "Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi",
@@ -83,7 +108,9 @@ PopGridApp <- function(){
       )
     })
 
-    shinyDirChoose(input, "output_path", roots= c(wd = ".", home = "~"))
+    shinyDirChoose(input,
+                   "output_path",
+                   roots = c(wd = ".", home = "~"))
     observeEvent(input$output_path, {
       outPath <- parseDirPath(roots = c(wd = getwd(), home = "~"), input$output_path)
 
@@ -94,7 +121,10 @@ PopGridApp <- function(){
       }
     })
 
+    # Inputs collected on the conditional tabs are stored in as reactive values so that values are retained when UI changes
     cond_tab_values <- reactiveValues(input_file = NULL, input_states = NULL)
+
+    # Update these reactive values as needed
     observeEvent(input$input_file, {
       cond_tab_values$input_file <- parseFilePaths(roots = c(wd = getwd(), home = "~"), input$input_file)$datapath
     })
@@ -102,7 +132,9 @@ PopGridApp <- function(){
       cond_tab_values$input_states <- input$state_select
     })
 
-    shinyFileChoose(input, "input_file", roots= c(wd = ".", home = "~"), filetypes = c("", "shp"))
+    shinyFileChoose(input, "input_file",
+                    roots= c(wd = ".", home = "~"),
+                    filetypes = c("", "shp"))
     observeEvent(input$input_file, {
       shinyFile <- parseFilePaths(roots = c(wd = getwd(), home = "~"), input$input_file)$datapath
 
@@ -113,7 +145,61 @@ PopGridApp <- function(){
         }
     })
 
+    # All input values are stored as reactive values here for clarity
+    run_inputs <- reactiveValues(mode = NULL,
+                                 input_file = NULL,
+                                 year = NULL,
+                                 area_weight = NULL,
+                                 input_states = NULL,
+                                 out_path = NULL,
+                                 outfile = NULL,
+                                 overwrite = NULL
+                                 )
+
+    # When run button is clicked, update all input values to be compatible with run_aggregation
     observeEvent(input$run, {
+      run_inputs$mode <- input$mode
+      if (input$mode == "shapefile" & !is.null(cond_tab_values$input_file)) {
+        run_inputs$grid_path <- cond_tab_values$input_file %>% dirname()
+        run_inputs$grid_name <- cond_tab_values$input_file %>% basename() %>% str_remove("\\.[^.]*$")
+      } else {
+        run_inputs$grid_path <- NULL
+        run_inputs$grid_name <- NULL
+      }
+      run_inputs$year <- input$year
+      run_inputs$area_weight <- TRUE
+      if (input$states == "Select a subset of states") {
+        run_inputs$input_states <- cond_tab_values$input_states
+      } else {
+        run_inputs$input_states <- NULL
+      }
+      run_inputs$out_path <- parseDirPath(roots = c(wd = getwd(), home = "~"), input$output_path)
+      run_inputs$outfile <- input$outfile_name
+      run_inputs$overwrite <- input$overwrite
+
+      # if required inputs are missing, create pop-ups with a descriptive error messages
+      if ((is.character(run_inputs$out_path) & length(run_inputs$out_path) == 0) | is.null(run_inputs$out_path)) {
+        showModal(
+          modalDialog(
+            title = "Error",
+            HTML("In the <em>Inputs</em> pane, please provide a file path to save output files."),
+            easyClose = TRUE,
+            scrollable = FALSE
+          )
+        )
+      }
+
+      if ((is.character(run_inputs$outfile) & run_inputs$outfile == "") | is.null(run_inputs$outfile)) {
+        showModal(
+          modalDialog(
+            title = "Error",
+            HTML("In the <em>Inputs</em> pane, please provide a name to use for output files."),
+            easyClose = TRUE,
+            scrollable = FALSE
+          )
+        )
+      }
+
       if (input$states == "Select a subset of states" & is.null(cond_tab_values$input_states)) {
         showModal(
           modalDialog(
@@ -124,12 +210,8 @@ PopGridApp <- function(){
           )
         )
       }
-    })
 
-    observeEvent(input$run, {
-      if (input$mode == "Shapefile" & (((is.character(cond_tab_values$input_file)) & length(cond_tab_values$input_file) == 0) | is.null(cond_tab_values$input_file))) {
-        message(typeof(cond_tab_values$input_file))
-        message(length(cond_tab_values$input_file))
+      if (input$mode == "shapefile" & (((is.character(cond_tab_values$input_file)) & length(cond_tab_values$input_file) == 0) | is.null(cond_tab_values$input_file))) {
         showModal(
           modalDialog(
             title = "Error",
@@ -139,30 +221,42 @@ PopGridApp <- function(){
           )
         )
       }
-    })
 
-    observeEvent(input$run, {
-      message("inputs are:")
-      message("mode = ", input$mode)
-      message("in_path = ", cond_tab_values$input_file)
-      message("year = ", input$year)
-      message("method = ",  input$method)
-      message("state = ",  cond_tab_values$input_states)
-      message("out_path = ", input$out_path)
-      message("out_name = ", input$outfile_name)
-      message("overwrite = ",  input$overwrite)
-      # run_aggregation(
-      #   mode = input$mode,
-      #   grid_path = input$grid_path,
-      #   grid_name = input$grid_name,
-      #   year = input$year,
-      #   #variables = input$grid_path,
-      #   area_weight = input$method,
-      #   states = input$states,
-      #   output_path = input$out_path,
-      #   output_name = input$outfile_name,
-      #   overwrite = input$overwrite
-      # )
+      ## need to add progress bar
+      ## need to add audit trail indicating options selected (this should probably be implemented in run_aggregation)
+
+      # Check that all required inputs are provided, and if so, call run_aggregation with inputs
+      if (!((is.character(run_inputs$outfile) & run_inputs$outfile == "") | is.null(run_inputs$outfile)) &
+          !((is.character(run_inputs$out_path) & length(run_inputs$out_path) == 0) | is.null(run_inputs$out_path)) &
+          ((run_inputs$mode == "shapefile" & !is.null(run_inputs$grid_path) & !is.null(run_inputs$grid_name)) | run_inputs$mode != "shapefile") &
+          (input$states == "Select a subset of states" & !is.null(run_inputs$input_states) | input$states != "Select a subset of states")
+      ) {
+        message("running with inputs:")
+        message("mode = ", run_inputs$mode)
+        message("grid_path = ", run_inputs$grid_path)
+        message("grid_name = ", run_inputs$grid_name)
+        message("year = ", run_inputs$year)
+        message("area_weight = ",  run_inputs$area_weight)
+        message("states = ",  run_inputs$input_states)
+        message("out_path = ", run_inputs$out_path)
+        message("out_name = ", run_inputs$outfile)
+        message("overwrite = ",  run_inputs$overwrite)
+
+        # run_aggregation(
+        #   mode = run_inputs$mode,
+        #   grid_path = run_inputs$grid_path,
+        #   grid_name = run_inputs$grid_name,
+        #   year = run_inputs$year,
+        #   #variables = input$grid_path,
+        #   area_weight = run_inputs$area_weight,
+        #   states = run_inputs$input_states,
+        #   output_path = run_inputs$out_path,
+        #   output_name = run_inputs$outfile,
+        #   overwrite = run_inputs$overwrite
+        # )
+      }
+
+
     })
   }
 
