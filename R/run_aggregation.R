@@ -133,7 +133,7 @@ run_aggregation <- function(
     county_names <- state_counties$COUNTYFP %>% unique
 
     # set up cluster to do parallel processing
-    if (detectCores() <= 0){
+    if (detectCores() - 2 <= 0){
       n_cores = 1
     } else {
       n_cores <- detectCores() - 2
@@ -161,7 +161,7 @@ run_aggregation <- function(
                                                        geometry = TRUE
       )) %>% st_transform(NA_eq)
 
-      raw_block_data <- raw_block_data %>% zero_bin(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
+      raw_block_data <- raw_block_data %>% adjust_bins(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
 
       # grab county shape and subset user grid to cells that overlap county
       county_shape <- county_state %>% filter(STATEFP == state & COUNTYFP == county)

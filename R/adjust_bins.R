@@ -1,6 +1,6 @@
 #' @export
 
-zero_bin <- function(
+adjust_bins <- function(
     block_data = NULL,
     year = 2020,
     state = NULL,
@@ -36,7 +36,7 @@ zero_bin <- function(
     }
 
     tract <- tract %>%
-      mutate({{ column_name }} := .data[[col_to_divide]] / rowSums(select(., matches(pattern)), na.rm = TRUE)) #
+      mutate({{column_name}} := .data[[col_to_divide]] / rowSums(select(., matches(pattern)), na.rm = TRUE))
   }
 
   tract <- replace(tract, is.na(tract), 0)
@@ -45,10 +45,10 @@ zero_bin <- function(
 
   block_data <- block_data %>% left_join(tract, by = c("tractID" = "GEOID"))
 
-  block_patterns <- c("P12I_003N", "P12J_003N", "P12K_003N", "P12L_003N", "P12M_003N", "P12N_003N", "P12O_003N",
-                      "P12P_003N", "P12Q_003N", "P12R_003N", "P12S_003N", "P12T_003N", "P12U_003N", "P12V_003N",
-                      "P12I_027N", "P12J_027N", "P12K_027N", "P12L_027N", "P12M_027N", "P12N_027N", "P12O_027N",
-                      "P12P_027N", "P12Q_027N", "P12R_027N", "P12S_027N", "P12T_027N", "P12U_027N", "P12V_027N")
+  # block_patterns <- c("P12I_003N", "P12J_003N", "P12K_003N", "P12L_003N", "P12M_003N", "P12N_003N", "P12O_003N",
+  #                     "P12P_003N", "P12Q_003N", "P12R_003N", "P12S_003N", "P12T_003N", "P12U_003N", "P12V_003N",
+  #                     "P12I_027N", "P12J_027N", "P12K_027N", "P12L_027N", "P12M_027N", "P12N_027N", "P12O_027N",
+  #                     "P12P_027N", "P12Q_027N", "P12R_027N", "P12S_027N", "P12T_027N", "P12U_027N", "P12V_027N")
 
   tract_patterns <- list("P12I_003N" = "PCT12A_0",
                          "P12P_003N" = "PCT12A_0",
@@ -92,7 +92,40 @@ zero_bin <- function(
     block_data[[key]] <- block_data[[key]] - block_data[[new_col_name]]
   }
 
-  # remove tract columns and return
+  # collapse age bins that we don't need
+  for (letter in c("I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V")) {
+    col_name08 <- paste0("P12", letter, "_008N")
+    col_name09 <- paste0("P12", letter, "_009N")
+    col_name10 <- paste0("P12", letter, "_010N")
+    col_match08 <- paste(col_name08, col_name09, col_name10, sep = "|")
+    col_name18 <- paste0("P12", letter, "_018N")
+    col_name19 <- paste0("P12", letter, "_019N")
+    col_match18 <- paste(col_name18, col_name19, sep = "|")
+    col_name20 <- paste0("P12", letter, "_020N")
+    col_name21 <- paste0("P12", letter, "_021N")
+    col_match20 <-paste(col_name20, col_name21, sep = "|")
+    col_name32 <- paste0("P12", letter, "_032N")
+    col_name33 <- paste0("P12", letter, "_033N")
+    col_name34 <- paste0("P12", letter, "_034N")
+    col_match32 <- paste(col_name32, col_name33, col_name34, sep = "|")
+    col_name42 <- paste0("P12", letter, "_042N")
+    col_name43 <- paste0("P12", letter, "_043N")
+    col_match42 <- paste(col_name42, col_name43, sep = "|")
+    col_name44 <- paste0("P12", letter, "_044N")
+    col_name45 <- paste0("P12", letter, "_045N")
+    col_match44 <- paste(col_name44, col_name45, sep = "|")
+    block_data <- block_data %>%
+      mutate({{col_name08}} := rowSums(select(st_drop_geometry(.), matches(col_match08)), na.rm = TRUE),
+             {{col_name18}} := rowSums(select(st_drop_geometry(.), matches(col_match18)), na.rm = TRUE),
+             {{col_name20}} := rowSums(select(st_drop_geometry(.), matches(col_match20)), na.rm = TRUE),
+             {{col_name32}} := rowSums(select(st_drop_geometry(.), matches(col_match32)), na.rm = TRUE),
+             {{col_name42}} := rowSums(select(st_drop_geometry(.), matches(col_match42)), na.rm = TRUE),
+             {{col_name44}} := rowSums(select(st_drop_geometry(.), matches(col_match44)), na.rm = TRUE)) %>%
+      select(-all_of(c(col_name09, col_name10, col_name19, col_name21, col_name33, col_name34, col_name43, col_name45)))
+  }
+
+  # remove tract columns
   block_data <- block_data %>% select(-c(setdiff(names(tract), "GEOID"), "tractID"))
+
   return(block_data)
 }
