@@ -223,7 +223,7 @@ run_aggregation <- function(
                  P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
                  P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
           select(-all_of(final_vars)) %>%
-          county_pop_weight(final_vars = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+          county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
           pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
           left_join(var_info_abb, by = c("variable" = "var"))
       } else{
@@ -315,7 +315,7 @@ run_aggregation <- function(
              P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
              P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
       select(-all_of(final_vars)) %>%
-      county_pop_weight(final_vars = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+      county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
       pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
       left_join(var_info_abb, by = c("variable" = "var"))
   } else{
