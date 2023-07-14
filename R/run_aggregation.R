@@ -72,7 +72,14 @@ run_aggregation <- function(
     message("Using provided list of Census variables")
   }
 
-  var_info <- load_variables(year = year, dataset = census_file) %>% filter(name %in% variables)
+  drop_patterns <- c("009", "010", "019", "021", "033", "034", "043", "045") %>% paste(collapse = "|")
+  var_letters <- c("I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V")
+  new_digits <- c("002", "026")
+  combinations <- expand.grid(var_letters, new_digits, stringsAsFactors = FALSE)
+  new_patterns <- c(paste0("P12", combinations$Var1, "_", combinations$Var2, "N"))
+  final_vars <- c(variables[!grepl(drop_patterns, variables)], new_patterns)
+
+  var_info <- load_variables(year = year, dataset = census_file) %>% filter(name %in% final_vars)
   var_info <- var_info %>% #filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
     separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
     mutate(Gender = toupper(Gender),
@@ -169,11 +176,11 @@ run_aggregation <- function(
 
       # run spatial analysis using helper functions based on user's selected allocation method
       if (area_weight){
-        dissolved <- allocate_area_weight(county_grid = county_grid, pop_data = raw_block_data, variables = variables, year = year)
+        dissolved <- allocate_area_weight(county_grid = county_grid, pop_data = raw_block_data, variables = final_vars, year = year)
         weights = dissolved$weight
         dissolved = dissolved$dissolved
       } else {
-        dissolved <- allocate_centroids(county_grid = county_grid, pop_data = raw_block_data, variables = variables, year = year)
+        dissolved <- allocate_centroids(county_grid = county_grid, pop_data = raw_block_data, variables = final_vars, year = year)
         weights = dissolved$weight
         dissolved = dissolved$dissolved
       }
@@ -190,7 +197,7 @@ run_aggregation <- function(
       # grab the grid cells that don't border the edge of the county, these are ready to go and can be saved
       diss_interior <- dissolved %>% filter(!(gridID %in% edge_codes))
       interior_csv <- diss_interior %>%
-        pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
+        pivot_longer(cols = all_of(final_vars), names_to = "variable", values_to = "Population") %>%
         st_drop_geometry() %>%
         as.data.frame() %>%
         left_join(var_info, by = c("variable" = "name")) %>%
@@ -215,8 +222,8 @@ run_aggregation <- function(
                  P012T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
                  P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
                  P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
-          select(-all_of(variables)) %>%
-          county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+          select(-all_of(final_vars)) %>%
+          county_pop_weight(final_vars = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
           pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
           left_join(var_info_abb, by = c("variable" = "var"))
       } else{
@@ -281,11 +288,11 @@ run_aggregation <- function(
   # dissolve edges
   dissolved_edge <- full_edge %>%
     group_by(COL, ROW) %>%
-    summarize(across(all_of(variables), ~sum(., na.rm = TRUE)))
+    summarize(across(all_of(final_vars), ~sum(., na.rm = TRUE)))
   rm(full_edge)
 
   edge_csv <- dissolved_edge %>%
-    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
+    pivot_longer(cols = all_of(final_vars), names_to = "variable", values_to = "Population") %>%
     st_drop_geometry() %>%
     as.data.frame() %>%
     left_join(var_info, by = c("variable" = "name")) %>%
@@ -307,8 +314,8 @@ run_aggregation <- function(
              P012T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
              P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
              P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
-      select(-all_of(variables)) %>%
-      county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
+      select(-all_of(final_vars)) %>%
+      county_pop_weight(final_vars = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
       pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
       left_join(var_info_abb, by = c("variable" = "var"))
   } else{
