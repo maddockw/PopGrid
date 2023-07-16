@@ -155,8 +155,10 @@ run_aggregation <- function(
       library(tidycensus)
       library(flock)
     })
+    clusterEvalQ(my_cluster, {options(showOutput = TRUE)})
 
     county_names %>% parLapply(my_cluster, ., function(county){
+      cat("parLapplying")
       # read in block-level data for the county
       raw_block_data <- suppressMessages(get_decennial(geography = "block",
                                                        variables = variables,
