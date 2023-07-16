@@ -146,7 +146,7 @@ run_aggregation <- function(
       n_cores <- detectCores() - 2
     }
     my_cluster <- makeCluster(n_cores, type = "PSOCK")
-    message("cluster")
+    cat("cluster")
     clusterEvalQ(my_cluster, {
       remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
       library(PopGrid)
@@ -169,15 +169,15 @@ run_aggregation <- function(
                                                        geometry = TRUE
       )) %>% st_transform(NA_eq)
 
-      message("before bin transform")
+      cat("before bin transform")
       raw_block_data <- raw_block_data %>% adjust_bins(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
-      message("after bin transform")
+      cat("after bin transform")
 
       # grab county shape and subset user grid to cells that overlap county
       county_shape <- county_state %>% filter(STATEFP == state & COUNTYFP == county)
       county_grid <- user_grid[county_shape,]
 
-      message("before allocation")
+      cat("before allocation")
       # run spatial analysis using helper functions based on user's selected allocation method
       if (area_weight){
         dissolved <- allocate_area_weight(county_grid = county_grid, pop_data = raw_block_data, variables = final_vars, year = year)
@@ -188,7 +188,7 @@ run_aggregation <- function(
         weights = dissolved$weight
         dissolved = dissolved$dissolved
       }
-      message("after allocation")
+      cat("after allocation")
 
       # grab the grid cells that border the edge of the county, these will be dissolved again later to remove county boundaries
       edge_buffer <- county_shape %>% st_boundary %>% st_buffer(dist = 0.01)
@@ -252,6 +252,7 @@ run_aggregation <- function(
       diss_edge <- diss_edge %>% select(-gridID)
       diss_interior <- diss_interior %>% select(-gridID)
 
+      cat("writing to output file")
       # write output files
       lock_file <- file.path(output_path, paste0("lock", ".txt"))
       l1 <- lock(lock_file, exclusive = TRUE)
