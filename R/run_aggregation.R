@@ -145,7 +145,7 @@ run_aggregation <- function(
     } else {
       n_cores <- detectCores() - 2
     }
-    n_cores = 1
+
     my_cluster <- makeCluster(n_cores, type = "PSOCK")
     clusterEvalQ(my_cluster, {
       remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
@@ -155,7 +155,6 @@ run_aggregation <- function(
       library(tidycensus)
       library(flock)
     })
-    clusterEvalQ(my_cluster, {options(showOutput = TRUE)})
 
     county_names %>% parLapply(my_cluster, ., function(county){
       # read in block-level data for the county
@@ -251,7 +250,8 @@ run_aggregation <- function(
 
       # write output files
       lock_file <- file.path(output_path, paste0("lock", ".txt"))
-      l1 <- lock(lock_file, exclusive = TRUE)
+      l1 = lock(lock_file, exclusive = TRUE)
+      lock(l1)
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
           if (!overwrite){
