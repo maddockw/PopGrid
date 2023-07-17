@@ -38,20 +38,20 @@ county_aggregation <- function(
     out_weights <- out_data %>%
       st_drop_geometry() %>%
       as.data.frame() %>%
-      mutate(P12I = rowSums(select(., matches("^P12I\\d{3}N")), na.rm = TRUE),
-             P12J = rowSums(select(., matches("^P12J\\d{3}N")), na.rm = TRUE),
-             P12K = rowSums(select(., matches("^P12K\\d{3}N")), na.rm = TRUE),
-             P12L = rowSums(select(., matches("^P12L\\d{3}N")), na.rm = TRUE),
-             P12M = rowSums(select(., matches("^P12M\\d{3}N")), na.rm = TRUE),
-             P12N = rowSums(select(., matches("^P12N\\d{3}N")), na.rm = TRUE),
-             P12O = rowSums(select(., matches("^P12O\\d{3}N")), na.rm = TRUE),
-             P12P = rowSums(select(., matches("^P12P\\d{3}N")), na.rm = TRUE),
-             P12Q = rowSums(select(., matches("^P12Q\\d{3}N")), na.rm = TRUE),
-             P12R = rowSums(select(., matches("^P12R\\d{3}N")), na.rm = TRUE),
-             P12S = rowSums(select(., matches("^P12S\\d{3}N")), na.rm = TRUE),
-             P12T = rowSums(select(., matches("^P12T\\d{3}N")), na.rm = TRUE),
-             P12U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
-             P12V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
+      mutate(P12I = rowSums(select(., matches("^P12I")), na.rm = TRUE),
+             P12J = rowSums(select(., matches("^P12J")), na.rm = TRUE),
+             P12K = rowSums(select(., matches("^P12K")), na.rm = TRUE),
+             P12L = rowSums(select(., matches("^P12L")), na.rm = TRUE),
+             P12M = rowSums(select(., matches("^P12M")), na.rm = TRUE),
+             P12N = rowSums(select(., matches("^P12N")), na.rm = TRUE),
+             P12O = rowSums(select(., matches("^P12O")), na.rm = TRUE),
+             P12P = rowSums(select(., matches("^P12P")), na.rm = TRUE),
+             P12Q = rowSums(select(., matches("^P12Q")), na.rm = TRUE),
+             P12R = rowSums(select(., matches("^P12R")), na.rm = TRUE),
+             P12S = rowSums(select(., matches("^P12S")), na.rm = TRUE),
+             P12T = rowSums(select(., matches("^P12T")), na.rm = TRUE),
+             P12U = rowSums(select(., matches("^P12U")), na.rm = TRUE),
+             P12V = rowSums(select(., matches("^P12V")), na.rm = TRUE)) %>%
       select(-all_of(variables), -NAME) %>%
       county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
       pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
