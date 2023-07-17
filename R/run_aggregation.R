@@ -79,18 +79,7 @@ run_aggregation <- function(
   new_patterns <- c(paste0("P12", combinations$Var1, "_", combinations$Var2, "N"))
   final_vars <- c(variables[!grepl(drop_patterns, variables)], new_patterns)
 
-  var_info <- load_variables(year = year, dataset = census_file) %>% filter(name %in% final_vars)
-  var_info <- var_info %>% #filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26")) %>%
-    separate(label, into = c(NA, "Gender", "AgeRange"), sep = "!!") %>%
-    mutate(Gender = toupper(Gender),
-           AgeRange = gsub(" to ", "TO", AgeRange),
-           Race = str_extract(concept, "(?<=\\().*?(?=\\))")) %>%
-    mutate(AgeRange = gsub(" years", "", AgeRange)) %>%
-    mutate(AgeRange = gsub(" and over", "+", AgeRange)) %>%
-    mutate(AgeRange = gsub(" and ", "TO", AgeRange)) %>%
-    mutate(AgeRange = gsub("Under ", "0TO", AgeRange)) %>%
-    mutate(Ethnicity = "ALL") %>%
-    select(-concept)
+  var_info <- var_info(vars = final_vars, year = year, dataset = census_file)
   var_info_abb <- var_info %>%
     mutate(var = substr(name, 1, 5)) %>%
     select(var, Race) %>%
@@ -141,7 +130,7 @@ run_aggregation <- function(
 
     # set up cluster to do parallel processing
     if (detectCores() - 2 <= 0){
-      n_cores = 1
+      n_cores <- 1
     } else {
       n_cores <- detectCores() - 2
     }
@@ -150,10 +139,10 @@ run_aggregation <- function(
     clusterEvalQ(my_cluster, {
       remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
       library(PopGrid)
-      library(tidyverse)
-      library(sf)
-      library(tidycensus)
-      library(filelock)
+      #library(tidyverse)
+      #library(sf)
+      #library(tidycensus)
+      #library(filelock)
     })
 
     county_names %>% parLapply(my_cluster, ., function(county){
