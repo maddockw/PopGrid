@@ -81,7 +81,7 @@ run_aggregation <- function(
 
   var_info <- var_info(vars = final_vars, year = year, dataset = census_file)
   var_info_abb <- var_info %>%
-    mutate(var = substr(name, 1, 5)) %>%
+    mutate(var = substr(name, 1, 4)) %>%
     select(var, Race) %>%
     distinct()
 
@@ -213,8 +213,8 @@ run_aggregation <- function(
                  P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
                  P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
           select(-all_of(final_vars)) %>%
-          county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
-          pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
+          county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
+          pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
           left_join(var_info_abb, by = c("variable" = "var"))
       } else{
         weights_interior <- weights %>%
@@ -305,18 +305,18 @@ run_aggregation <- function(
              P012U = rowSums(select(., matches("^P12U\\d{3}N")), na.rm = TRUE),
              P012V = rowSums(select(., matches("^P12V\\d{3}N")), na.rm = TRUE)) %>%
       select(-all_of(final_vars)) %>%
-      county_pop_weight(variables = c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V"), year = year) %>%
-      pivot_longer(cols = all_of(c("P012I", "P012J", "P012K", "P012L", "P012M", "P012N", "P012O", "P012P", "P012Q", "P012R", "P012S", "P012T", "P012U", "P012V")), names_to = "variable", values_to = "Value") %>%
+      county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
+      pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
       left_join(var_info_abb, by = c("variable" = "var"))
   } else{
     edge_weights <- edge_weights %>%
       mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
-            P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
-            P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
-            P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
-            P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
-            P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
-            P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
+             P012B = rowSums(select(., matches("^P012B\\d{3}")), na.rm = TRUE),
+             P012C = rowSums(select(., matches("^P012C\\d{3}")), na.rm = TRUE),
+             P012D = rowSums(select(., matches("^P012D\\d{3}")), na.rm = TRUE),
+             P012E = rowSums(select(., matches("^P012E\\d{3}")), na.rm = TRUE),
+             P012F = rowSums(select(., matches("^P012F\\d{3}")), na.rm = TRUE),
+             P012G = rowSums(select(., matches("^P012G\\d{3}")), na.rm = TRUE)) %>%
       select(-all_of(variables)) %>%
       county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
       pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
