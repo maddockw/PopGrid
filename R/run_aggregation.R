@@ -153,7 +153,7 @@ run_aggregation <- function(
       library(tidyverse)
       library(sf)
       library(tidycensus)
-      library(flock)
+      library(filelock)
     })
 
     county_names %>% parLapply(my_cluster, ., function(county){
@@ -250,8 +250,7 @@ run_aggregation <- function(
 
       # write output files
       lock_file <- file.path(output_path, paste0("lock", ".txt"))
-      l1 = lock(lock_file, exclusive = TRUE)
-      lock(l1)
+      l1 <- lock(lock_file, exclusive = TRUE)
       if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
         if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
           if (!overwrite){
