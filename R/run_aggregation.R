@@ -137,7 +137,7 @@ run_aggregation <- function(
 
     my_cluster <- makeCluster(n_cores, type = "PSOCK")
     clusterEvalQ(my_cluster, {
-      remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
+      #remotes::install_github("maddockw/PopGrid", ref = "2020_updates")
       library(PopGrid)
       #library(tidyverse)
       #library(sf)
