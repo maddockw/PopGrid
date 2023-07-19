@@ -26,7 +26,7 @@ var_info <- function(
         as.numeric(substr(name, 7, 8)) >  25 ~ "FEMALE",
         .default = NA
       ),
-      `Age Range` = case_when(
+      AgeRange = case_when(
         substr(name, 7, 8) %in% c("02", "26") ~ "0TO0",
         substr(name, 7, 8) %in% c("03", "27") ~ "1TO4",
         substr(name, 7, 8) %in% c("04", "28") ~ "5TO9",

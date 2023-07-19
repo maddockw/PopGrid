@@ -82,7 +82,7 @@ run_aggregation <- function(
   var_info <- var_info(vars = final_vars, year = year, dataset = census_file)
   var_info_abb <- var_info %>%
     mutate(var = substr(name, 1, 4)) %>%
-    select(var, Race) %>%
+    select(var, Race, Ethnicity) %>%
     distinct()
 
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
@@ -115,6 +115,7 @@ run_aggregation <- function(
   if (!("COL" %in% names(user_grid) && "ROW" %in% names(user_grid))){
     stop("Provided grid must have the columns COL and ROW and the value pairs must be unique. Canceling...")
   }
+  user_grid <- user_grid %>% rename(Column = COL, Row = ROW)
 
   # set up output files
   edge_outfile <- file.path(output_path, paste0("edge_merge", ".shp"))
@@ -167,15 +168,15 @@ run_aggregation <- function(
       # run spatial analysis using helper functions based on user's selected allocation method
       if (area_weight){
         dissolved <- allocate_area_weight(county_grid = county_grid, pop_data = raw_block_data, variables = final_vars, year = year)
-        weights = dissolved$weight
-        dissolved = dissolved$dissolved
+        weights <- dissolved$weight
+        dissolved <- dissolved$dissolved
       } else {
         dissolved <- allocate_centroids(county_grid = county_grid, pop_data = raw_block_data, variables = final_vars, year = year)
-        weights = dissolved$weight
-        dissolved = dissolved$dissolved
+        weights <- dissolved$weight
+        dissolved <- dissolved$dissolved
       }
 
-      # grab the grid cells that border the edge of the county, these will be dissolved again later to remove county boundaries
+      # grab the grid cells that overlap the edge of the county, these will be dissolved again later to remove county boundaries
       edge_buffer <- county_shape %>% st_boundary %>% st_buffer(dist = 0.01)
       diss_edge <- dissolved[edge_buffer,]
       weights_edge <- weights[edge_buffer,] %>% st_drop_geometry() %>% as.data.frame()
@@ -192,7 +193,7 @@ run_aggregation <- function(
         as.data.frame() %>%
         left_join(var_info, by = c("variable" = "name")) %>%
         select(-gridID, -variable) %>%
-        mutate(year = year)
+        mutate(Year = year)
       if (year == 2020){
         weights_interior <- weights %>%
           filter(!(gridID %in% edge_codes)) %>%
@@ -215,7 +216,10 @@ run_aggregation <- function(
           select(-all_of(final_vars)) %>%
           county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
           pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
-          left_join(var_info_abb, by = c("variable" = "var"))
+          left_join(var_info_abb, by = c("variable" = "var")) %>%
+          rename(TargetCol = Column, TargetRow = Row) %>%
+          mutate(SourceCol = substr(countyID, 1, 2), SourceRow = substr(countyID, 3, 5)) %>%
+          select(-c(countyID, gridID, variable))
       } else{
         weights_interior <- weights %>%
           filter(!(gridID %in% edge_codes)) %>%
@@ -231,7 +235,10 @@ run_aggregation <- function(
           select(-all_of(variables)) %>%
           county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
           pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
-          left_join(var_info_abb, by = c("variable" = "var"))
+          left_join(var_info_abb, by = c("variable" = "var")) %>%
+          rename(TargetCol = Column, TargetRow = Row) %>%
+          mutate(SourceCol = substr(countyID, 1, 2), SourceRow = substr(countyID, 3, 5)) %>%
+          select(-c(countyID, gridID, variable))
       }
 
       diss_edge <- diss_edge %>% select(-gridID)
@@ -277,7 +284,7 @@ run_aggregation <- function(
 
   # dissolve edges
   dissolved_edge <- full_edge %>%
-    group_by(COL, ROW) %>%
+    group_by(Column, Row) %>%
     summarize(across(all_of(final_vars), ~sum(., na.rm = TRUE)))
   rm(full_edge)
 
@@ -286,7 +293,7 @@ run_aggregation <- function(
     st_drop_geometry() %>%
     as.data.frame() %>%
     left_join(var_info, by = c("variable" = "name")) %>%
-    mutate(year = year) %>%
+    mutate(Year = year) %>%
     select(-variable)
   if (year == 2020){
     edge_weights <- edge_weights %>%
@@ -307,7 +314,10 @@ run_aggregation <- function(
       select(-all_of(final_vars)) %>%
       county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
       pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
-      left_join(var_info_abb, by = c("variable" = "var"))
+      left_join(var_info_abb, by = c("variable" = "var")) %>%
+      rename(TargetCol = Column, TargetRow = Row) %>%
+      mutate(SourceCol = substr(countyID, 1, 2), SourceRow = substr(countyID, 3, 5)) %>%
+      select(-c(countyID, gridID, variable))
   } else{
     edge_weights <- edge_weights %>%
       mutate(P012A = rowSums(select(., matches("^P012A\\d{3}")), na.rm = TRUE),
@@ -320,7 +330,10 @@ run_aggregation <- function(
       select(-all_of(variables)) %>%
       county_pop_weight(variables = c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G"), year = year) %>%
       pivot_longer(cols = all_of(c("P012A", "P012B", "P012C", "P012D", "P012E", "P012F", "P012G")), names_to = "variable", values_to = "Value") %>%
-      left_join(var_info_abb, by = c("variable" = "var"))
+      left_join(var_info_abb, by = c("variable" = "var")) %>%
+      rename(TargetCol = Column, TargetRow = Row) %>%
+      mutate(SourceCol = substr(countyID, 1, 2), SourceRow = substr(countyID, 3, 5)) %>%
+      select(-c(countyID, gridID, variable))
   }
 
   # write dissolved edges to final output files
