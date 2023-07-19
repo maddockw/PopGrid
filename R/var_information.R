@@ -1,4 +1,4 @@
-var_info <- function(
+var_information <- function(
   vars = NULL,
   year = NULL,
   dataset = NULL

@@ -79,7 +79,7 @@ run_aggregation <- function(
   new_patterns <- c(paste0("P12", combinations$Var1, "_", combinations$Var2, "N"))
   final_vars <- c(variables[!grepl(drop_patterns, variables)], new_patterns)
 
-  var_info <- var_info(vars = final_vars, year = year, dataset = census_file)
+  var_info <- var_information(vars = final_vars, year = year, dataset = census_file)
   var_info_abb <- var_info %>%
     mutate(var = substr(name, 1, 4)) %>%
     select(var, Race, Ethnicity) %>%
@@ -145,6 +145,7 @@ run_aggregation <- function(
       #library(tidycensus)
       #library(filelock)
     })
+    message(paste0("state = ", state))
 
     county_names %>% parLapply(my_cluster, ., function(county){
       # read in block-level data for the county
