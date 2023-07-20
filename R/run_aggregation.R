@@ -123,6 +123,8 @@ run_aggregation <- function(
   csv_outfile <- file.path(output_path, paste0(output_name, ".csv"))
   edge_weights_outfile <- file.path(output_path, paste0("edge_weights", ".csv"))
   weights_outfile <- file.path(output_path, paste0(output_name, "_weights", ".csv"))
+  overwrite_check <- file.path(output_path, "overwrite_check")
+  file.remove(overwrite_check)
 
   # iterate across states and counties
   state_FIPS %>% lapply(function(state){
@@ -245,12 +247,15 @@ run_aggregation <- function(
         # write output files
         lock_file <- file.path(output_path, paste0("lock", ".txt"))
         l1 <- lock(lock_file, exclusive = TRUE)
-        if (which(state_FIPS == state) == 1 & which(county_names == county) == 1){
+        if (which(state_FIPS == state) == 1 & !file.exists(overwrite_check)){ #which(county_names == county) == 1){
           if (file.exists(edge_outfile) || file.exists(interior_outfile) || file.exists(csv_outfile) || file.exists(weights_outfile)){
             if (!overwrite){
               stop("One or more output files already exist and overwrite is set to FALSE. Canceling...", call. = FALSE)
             } else{
+              line <- paste0("Processed element in 1: ", state, " ", county, " on node: ", Sys.getpid())
+              cat(line, file = "track.txt", sep = "\n", append = TRUE)
               message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
+              file.create(overwrite_check)
               st_write(diss_edge, edge_outfile, delete_layer = overwrite, quiet = TRUE)
               st_write(diss_interior, interior_outfile, delete_layer = overwrite, quiet = TRUE)
               write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
@@ -258,6 +263,9 @@ run_aggregation <- function(
               write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
             }
           } else{
+            line <- paste0("Processed element in 2: ", county, " on node: ", Sys.getpid())
+            cat(line, file = "track.txt", sep = "\n", append = TRUE)
+            file.create(overwrite_check)
             st_write(diss_edge, edge_outfile)
             st_write(diss_interior, interior_outfile)
             write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
@@ -265,6 +273,8 @@ run_aggregation <- function(
             write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
           }
         } else{
+          line <- paste0("Processed element in 3: ", county, " on node: ", Sys.getpid())
+          cat(line, file = "track.txt", sep = "\n", append = TRUE)
           st_write(diss_edge, edge_outfile, append = TRUE, quiet = TRUE)
           st_write(diss_interior, interior_outfile, append = TRUE, quiet = TRUE)
           write.table(interior_csv, file = csv_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
@@ -278,8 +288,12 @@ run_aggregation <- function(
         }
       )
     })
+    stopCluster(my_cluster)
+    message("cleanup list:")
+    print(cleanup_list)
 
-    cleanup_list %>% parLapply(my_cluster, ., function(county){
+    cleanup_list %>% lapply(function(county){
+      message("cleaning up!")
       # read in block-level data for the county
       raw_block_data <- suppressMessages(get_decennial(geography = "block",
                                                        variables = variables,
@@ -378,16 +392,12 @@ run_aggregation <- function(
       diss_interior <- diss_interior %>% select(-gridID)
 
       # write output files
-      lock_file <- file.path(output_path, paste0("lock", ".txt"))
-      l1 <- lock(lock_file, exclusive = TRUE)
       st_write(diss_edge, edge_outfile, append = TRUE, quiet = TRUE)
       st_write(diss_interior, interior_outfile, append = TRUE, quiet = TRUE)
       write.table(interior_csv, file = csv_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
       write.table(weights_interior, file = weights_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
       write.table(weights_edge, file = edge_weights_outfile, append = TRUE, col.names = FALSE, row.names = FALSE, sep = ",")
-      unlock(l1)
     })
-    stopCluster(my_cluster)
   })
 
   # read in edges
@@ -457,6 +467,7 @@ run_aggregation <- function(
   edge_delete <- file.path(output_path, paste0("edge_merge"))
   file.remove(paste0(edge_delete, c(".shp", ".shx", ".dbf", ".prj")))
   file.remove(edge_weights_outfile)
+  file.remove(file.path(output_path, "lock.txt"))
 
   t2 <- Sys.time()-t1
   print(t2)
