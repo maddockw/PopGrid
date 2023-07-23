@@ -138,6 +138,7 @@ run_aggregation <- function(
       n_cores <- detectCores() - 2
     }
 
+    n_cores <- detectCores() - 1 #wm
     my_cluster <- makeCluster(n_cores, type = "PSOCK")
     clusterEvalQ(my_cluster, {
       library(PopGrid)
