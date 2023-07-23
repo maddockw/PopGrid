@@ -253,7 +253,7 @@ run_aggregation <- function(
             if (!overwrite){
               stop("One or more output files already exist and overwrite is set to FALSE. Canceling...", call. = FALSE)
             } else{
-              line <- paste0("Processed element in 1: ", state, " ", county, " on node: ", Sys.getpid())
+              line <- paste0("Processed element in 1: ", state, ", ", county, " on node: ", Sys.getpid())
               cat(line, file = "track.txt", sep = "\n", append = TRUE)
               message("One or more output files already exist and overwrite is set to TRUE. Overwriting...")
               file.create(overwrite_check)
@@ -264,7 +264,7 @@ run_aggregation <- function(
               write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
             }
           } else{
-            line <- paste0("Processed element in 2: ", county, " on node: ", Sys.getpid())
+            line <- paste0("Processed element in 2: ", state, ", ", county, " on node: ", Sys.getpid())
             cat(line, file = "track.txt", sep = "\n", append = TRUE)
             file.create(overwrite_check)
             st_write(diss_edge, edge_outfile)
@@ -274,7 +274,7 @@ run_aggregation <- function(
             write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
           }
         } else{
-          line <- paste0("Processed element in 3: ", county, " on node: ", Sys.getpid())
+          line <- paste0("Processed element in 3: ", state, ", ", county, " on node: ", Sys.getpid())
           cat(line, file = "track.txt", sep = "\n", append = TRUE)
           st_write(diss_edge, edge_outfile, append = TRUE, quiet = TRUE)
           st_write(diss_interior, interior_outfile, append = TRUE, quiet = TRUE)
