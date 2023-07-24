@@ -118,18 +118,20 @@ run_aggregation <- function(
   user_grid <- user_grid %>% rename(Column = COL, Row = ROW)
 
   # set up output files
-  edge_outfile <- file.path(output_path, paste0("edge_merge", ".shp"))
+  edge_outfile <- file.path(output_path, "edge_merge.shp")
   interior_outfile <- file.path(output_path, paste0(output_name, ".shp"))
   csv_outfile <- file.path(output_path, paste0(output_name, ".csv"))
-  edge_weights_outfile <- file.path(output_path, paste0("edge_weights", ".csv"))
+  edge_weights_outfile <- file.path(output_path, "edge_weights.csv")
   weights_outfile <- file.path(output_path, paste0(output_name, "_weights", ".csv"))
   overwrite_check <- file.path(output_path, "overwrite_check")
+  error_track <- file.path(output_path, "track_err.txt")
   file.remove(overwrite_check)
 
   # iterate across states and counties
   state_FIPS %>% lapply(function(state){
     state_counties <- county_state %>% filter(STATEFP == state)
     county_names <- state_counties$COUNTYFP %>% unique
+    file.remove(error_track)
 
     # set up cluster to do parallel processing
     if (detectCores() - 2 <= 0){
@@ -147,6 +149,8 @@ run_aggregation <- function(
     cleanup_list <- c()
 
     county_names %>% parLapply(my_cluster, ., function(county){
+      line1 <- paste0(state, ", ", county)
+      cat(line1, file = "track.txt", sep = "\n", append = TRUE)
       # read in block-level data for the county
       tryCatch({
         raw_block_data <- suppressMessages(get_decennial(geography = "block",
@@ -285,11 +289,15 @@ run_aggregation <- function(
         unlock(l1)
         },
         error = function(err){
-          cleanup_list <<- c(cleanup_list, county)
+          err_lock_file <- file.path(output_path, "err_lock.txt")
+          l2 <- lock(err_lock_file, exclusive = TRUE)
+          cat(as.character(county), sep = "\n", file = error_track, append = TRUE)
+          unlock(l2)
         }
       )
     })
     stopCluster(my_cluster)
+    cleanup_list <- readLines(error_track)
     message("cleanup list:")
     print(cleanup_list)
 
