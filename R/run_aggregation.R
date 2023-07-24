@@ -292,6 +292,7 @@ run_aggregation <- function(
           err_lock_file <- file.path(output_path, "err_lock.txt")
           l2 <- lock(err_lock_file, exclusive = TRUE)
           cat(as.character(county), sep = "\n", file = error_track, append = TRUE)
+          cat(paste0(as.character(county), ": ", conditionMessage(err)), sep = "\n", file = "county_errors.txt", append = TRUE)
           unlock(l2)
         }
       )
@@ -300,9 +301,10 @@ run_aggregation <- function(
     cleanup_list <- readLines(error_track)
     message("cleanup list:")
     print(cleanup_list)
+    print(typeof(cleanup_list[1]))
 
     cleanup_list %>% lapply(function(county){
-      message("cleaning up!")
+      message(paste0("cleaning up ", county))
       # read in block-level data for the county
       raw_block_data <- suppressMessages(get_decennial(geography = "block",
                                                        variables = variables,
@@ -314,6 +316,7 @@ run_aggregation <- function(
                                                        cb = FALSE,
                                                        geometry = TRUE
       )) %>% st_transform(NA_eq)
+      message(typeof(raw_block_data))
 
       raw_block_data <- raw_block_data %>% adjust_bins(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
 
@@ -342,6 +345,8 @@ run_aggregation <- function(
       weights_edge_codes <- weights_edge$gridID %>% unique
 
       # grab the grid cells that don't border the edge of the county, these are ready to go and can be saved
+      message(typeof(dissolved))
+      message(typeof(weights))
       diss_interior <- dissolved %>% filter(!(gridID %in% edge_codes))
       interior_csv <- diss_interior %>%
         pivot_longer(cols = all_of(final_vars), names_to = "variable", values_to = "Population") %>%
