@@ -134,19 +134,17 @@ run_aggregation <- function(
     file.remove(error_track)
 
     # set up cluster to do parallel processing
-    if (detectCores() - 2 <= 0){
+    if (detectCores() == 1){
       n_cores <- 1
     } else {
-      n_cores <- detectCores() - 2
+      n_cores <- detectCores() - 1
     }
 
-    n_cores <- detectCores() - 1 #wm
     my_cluster <- makeCluster(n_cores, type = "PSOCK")
     clusterEvalQ(my_cluster, {
       library(PopGrid)
     })
     message(paste0("state = ", state))
-    cleanup_list <- c()
 
     county_names %>% parLapply(my_cluster, ., function(county){
       line1 <- paste0(state, ", ", county)
