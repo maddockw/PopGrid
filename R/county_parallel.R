@@ -1,22 +1,23 @@
 #' @export
 
 county_parallel <- function(
-    #state = NULL,
-    county = NULL,
-    #year = 2020,
-    #census_file = "dhc",
+    county,
+    #state,
+    #year,
+    #census_file,
     #variables,
     #var_info,
     #var_info_abb,
     #tract_vars,
     #final_vars,
-    #state_shape,
+    #county_state,
     #user_grid,
-    #output_path = getwd(),
-    #crs = NULL,
+    #output_path,
+    #NA_eq,
     #output_name,
-    #overwrite = FALSE,
+    #overwrite,
     retries
+    #area_weight,
     #edge_outfile,
     #interior_outfile,
     #csv_outfile,
@@ -152,7 +153,8 @@ county_parallel <- function(
         write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
       }
     } else{
-      line <- paste0("Processed element in 3: ", state, ", ", county, " on node: ", Sys.getpid())
+      #line <- paste0("Processed element in 3: ", state, ", ", county, " on node: ", Sys.getpid())
+      line <- paste0("Processed element in 3 after ", retries, " retries: ", state, ", ", county, " on node: ", Sys.getpid())
       cat(line, file = "track.txt", sep = "\n", append = TRUE)
       st_write(diss_edge, edge_outfile, append = TRUE, quiet = TRUE)
       st_write(diss_interior, interior_outfile, append = TRUE, quiet = TRUE)
@@ -170,7 +172,29 @@ county_parallel <- function(
     unlock(l2)
 
     if (retries <= 4){
-      county_parallel(county, retries + 1)
+      county_parallel_closure(county = county, retries = retries + 1)
+                      # year = year,
+                      # state = state,
+                      # census_file = census_file,
+                      # variables = variables,
+                      # var_info = var_info,
+                      # var_info_abb = var_info_abb,
+                      # tract_vars = tract_vars,
+                      # final_vars = final_vars,
+                      # state_counties = state_counties,
+                      # user_grid = user_grid,
+                      # output_path = output_path,
+                      # NA_eq = NA_eq,
+                      # output_name = output_name,
+                      # overwrite = overwrite,
+                      # retries = retries + 1,
+                      # edge_outfile = edge_outfile,
+                      # interior_outfile = interior_outfile,
+                      # csv_outfile = csv_outfile,
+                      # edge_weights_outfile = edge_weights_outfile,
+                      # weights_outfile = weights_outfile,
+                      # overwrite_check = overwrite_check,
+                      # error_track = error_track)
     }
   }
   )
