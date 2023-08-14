@@ -21,6 +21,8 @@ county_aggregation <- function(
                                              output = "wide"
   )) %>% st_transform(crs)
 
+  raw_data <- raw_data %>% adjust_bins_tract_county()
+
   # add COL (state FIPS) and ROW (county FIPS) columns
   out_data <- raw_data %>% mutate(Column = substr(GEOID, 1, 2), Row = substr(GEOID, 3, 5))
 
