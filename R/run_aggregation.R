@@ -60,7 +60,7 @@ run_aggregation <- function(
     message("Using default Census variables")
     all_variables <- load_variables(year = year, dataset = census_file)
     if (year == 2020){
-      if (mode = "shapefile"){
+      if (mode == "shapefile"){
         variables <- all_variables[grepl("P12[I-V]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
         variables <- variables$name %>% unique
         tract_vars <- all_variables[grepl("PCT12[A-G, I-O]", all_variables$name),] %>% filter(substr(name, nchar(name) - 3, nchar(name)) %in% c("003N", "004N", "005N", "006N", "007N", "107N", "108N", "109N", "110N", "111N"))
