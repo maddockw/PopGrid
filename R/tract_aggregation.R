@@ -5,6 +5,7 @@ tract_aggregation <- function(
     variables,
     var_info,
     var_info_abb,
+    final_vars,
     output_path = getwd(),
     crs = NULL,
     output_name,
@@ -28,7 +29,7 @@ tract_aggregation <- function(
 
   # reshape to long table and drop geometry
   out_csv <- out_data %>%
-    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "Population") %>%
+    pivot_longer(cols = all_of(final_vars), names_to = "variable", values_to = "Population") %>%
     st_drop_geometry() %>%
     as.data.frame() %>%
     left_join(var_info, by = c("variable" = "name")) %>%
@@ -53,14 +54,15 @@ tract_aggregation <- function(
              P12S = rowSums(select(., matches("^P12S")), na.rm = TRUE),
              P12T = rowSums(select(., matches("^P12T")), na.rm = TRUE),
              P12U = rowSums(select(., matches("^P12U")), na.rm = TRUE),
-             P12V = rowSums(select(., matches("^P12V")), na.rm = TRUE)) %>%
-      select(-all_of(variables), -NAME) %>%
+             P12V = rowSums(select(., matches("^P12V")), na.rm = TRUE),
+             countyID = substr(GEOID, 1, 5)) %>%
+      select(-all_of(final_vars), -NAME) %>%
       county_pop_weight(variables = c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V"), year = year) %>%
       pivot_longer(cols = all_of(c("P12I", "P12J", "P12K", "P12L", "P12M", "P12N", "P12O", "P12P", "P12Q", "P12R", "P12S", "P12T", "P12U", "P12V")), names_to = "variable", values_to = "Value") %>%
       left_join(var_info_abb, by = c("variable" = "var")) %>%
       rename(TargetCol = Column, TargetRow = Row) %>%
       mutate(SourceCol = substr(countyID, 1, 2), SourceRow = substr(countyID, 3, 5)) %>%
-      select(-c(countyID, gridID, variable))
+      select(-c(countyID, variable))
   } else {
     out_weights <- out_data %>%
       st_drop_geometry() %>%
