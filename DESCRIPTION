@@ -1,6 +1,6 @@
 Package: PopGrid
-Imports: tidyverse, tidycensus, tigris, sf, parallel, filelock, shiny, shinyFiles
-Depends: tidyverse, tidycensus, tigris, sf, parallel, filelock, shiny, shinyFiles
+Imports: tidyverse, tidycensus, tigris, sf, parallel, remotes, shiny, shinyFiles
+Depends: tidyverse, tidycensus, tigris, sf, parallel, remotes, shiny, shinyFiles
 Title: Allocate U.S. Census data to grids
 Version: 0.0.0.9000
 Authors@R: 
