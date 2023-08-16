@@ -6,7 +6,8 @@ adjust_bins <- function(
     state = NULL,
     county = NULL,
     block_variables = NULL,
-    tract_variables = NULL
+    tract_variables = NULL,
+    census_file = NULL
 ){
   # add tract ID column for joining later
   block_data <- block_data %>% mutate(tractID = substr(GEOID, 1, 11))
@@ -18,7 +19,7 @@ adjust_bins <- function(
     state = state,
     county = county,
     year = year,
-    sumfile = "dhc",
+    sumfile = census_file,
     cb = FALSE,
     output = "wide"
   )

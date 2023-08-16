@@ -60,10 +60,18 @@ run_aggregation <- function(
     message("Using default Census variables")
     all_variables <- load_variables(year = year, dataset = census_file)
     if (year == 2020){
-      variables <- all_variables[grepl("P12[I-V]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
-      variables <- variables$name %>% unique
-      tract_vars <- all_variables[grepl("PCT12[A-G]", all_variables$name),] %>% filter(substr(name, nchar(name) - 3, nchar(name)) %in% c("003N", "004N", "005N", "006N", "007N", "107N", "108N", "109N", "110N", "111N"))
-      tract_vars <- tract_vars$name %>% unique
+      if (mode == "shapefile"){
+        variables <- all_variables[grepl("P12[I-V]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
+        variables <- variables$name %>% unique
+        tract_vars <- all_variables[grepl("PCT12[A-G]", all_variables$name),] %>% filter(substr(name, nchar(name) - 3, nchar(name)) %in% c("003N", "004N", "005N", "006N", "007N", "107N", "108N", "109N", "110N", "111N"))
+        tract_vars <- tract_vars$name %>% unique
+      } else {
+        block_vars <- all_variables[grepl("P12[I-V]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 2, nchar(name)) %in% c("01N", "02N", "26N"))
+        block_vars <- block_vars$name %>% unique
+        other_vars <- all_variables[grepl("PCT12[A-G I-O]", all_variables$name),] %>% filter(substr(name, nchar(name) - 3, nchar(name)) %in% c("003N", "107N"))
+        other_vars <- other_vars$name %>% unique
+        variables  <- c(block_vars, other_vars)
+      }
     } else {
       variables <- all_variables[grepl("P012[A-G]", all_variables$name),] %>% filter(!substr(name, nchar(name) - 1, nchar(name)) %in% c("01", "02", "26"))
       variables <- variables$name %>% unique
@@ -72,7 +80,11 @@ run_aggregation <- function(
     message("Using provided list of Census variables")
   }
 
-  drop_patterns <- c("009", "010", "019", "021", "033", "034", "043", "045") %>% paste(collapse = "|")
+  if(mode == "shapefile"){
+    drop_patterns <- c("009", "010", "019", "021", "033", "034", "043", "045") %>% paste(collapse = "|")
+  } else {
+    drop_patterns <- c("009", "010", "019", "021", "033", "034", "043", "045", "PCT") %>% paste(collapse = "|")
+  }
   var_letters <- c("I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V")
   new_digits <- c("002", "026")
   combinations <- expand.grid(var_letters, new_digits, stringsAsFactors = FALSE)
@@ -88,12 +100,12 @@ run_aggregation <- function(
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
-    county_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    county_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, final_vars = final_vars, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     message("Aggregation complete, outputs saved")
     silent_stop()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
-    tract_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, output_path = output_path, var_info_abb = var_info_abb, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    tract_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, final_vars = final_vars, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
     message("Aggregation complete, outputs saved")
     silent_stop()
   }
@@ -161,7 +173,7 @@ run_aggregation <- function(
                                                            geometry = TRUE
           )) %>% st_transform(NA_eq)
 
-          raw_block_data <- raw_block_data %>% adjust_bins(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars)
+          raw_block_data <- raw_block_data %>% adjust_bins(year = year, state = state, county = county, block_variables = variables, tract_variables = tract_vars, census_file = census_file)
 
           # grab county shape and subset user grid to cells that overlap county
           county_shape <- county_state %>% filter(STATEFP == state & COUNTYFP == county)
