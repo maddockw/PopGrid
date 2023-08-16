@@ -6,8 +6,7 @@ adjust_bins <- function(
     state = NULL,
     county = NULL,
     block_variables = NULL,
-    tract_variables = NULL,
-    census_file = NULL
+    tract_variables = NULL
 ){
   # add tract ID column for joining later
   block_data <- block_data %>% mutate(tractID = substr(GEOID, 1, 11))
@@ -19,7 +18,7 @@ adjust_bins <- function(
     state = state,
     county = county,
     year = year,
-    sumfile = census_file,
+    sumfile = "dhc",
     cb = FALSE,
     output = "wide"
   )
@@ -80,7 +79,7 @@ adjust_bins <- function(
                          "P12O_027N" = "PCT12G_1",
                          "P12V_027N" = "PCT12G_1")
 
-  # subset <5 bin into 0-1 and 1-4 bins using tract proportion
+  # subset 0-5 bin into 0-1 and 1-5 bins using tract proportion
   for (key in names(tract_patterns)) {
     proportion <- tract_patterns[[key]]
     if (substr(key, 7, 7) == "0") {
