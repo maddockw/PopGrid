@@ -95,8 +95,8 @@ PopGridApp <- function(){
             "State Selection",
             selectInput("state_select",
                         "Select all states to include",
-                        choices = c("Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware",
-                                    "Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky",
+                        choices = c("Alabama","Arizona","Arkansas","California","Colorado","Connecticut","Delaware", "District of Columbia",
+                                    "Florida","Georgia","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky",
                                     "Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi",
                                     "Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico",
                                     "New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania",
@@ -222,9 +222,6 @@ PopGridApp <- function(){
         )
       }
 
-      ## need to add progress bar
-      ## need to add audit trail indicating options selected (this should probably be implemented in run_aggregation)
-
       # Check that all required inputs are provided, and if so, call run_aggregation with inputs
       if (!((is.character(run_inputs$outfile) & run_inputs$outfile == "") | is.null(run_inputs$outfile)) &
           !((is.character(run_inputs$out_path) & length(run_inputs$out_path) == 0) | is.null(run_inputs$out_path)) &
@@ -242,21 +239,21 @@ PopGridApp <- function(){
         message("out_name = ", run_inputs$outfile)
         message("overwrite = ",  run_inputs$overwrite)
 
-        # run_aggregation(
-        #   mode = run_inputs$mode,
-        #   grid_path = run_inputs$grid_path,
-        #   grid_name = run_inputs$grid_name,
-        #   year = run_inputs$year,
-        #   #variables = input$grid_path,
-        #   area_weight = run_inputs$area_weight,
-        #   states = run_inputs$input_states,
-        #   output_path = run_inputs$out_path,
-        #   output_name = run_inputs$outfile,
-        #   overwrite = run_inputs$overwrite
-        # )
+        withProgress(message = "Aggregating population", value = 0, {
+          run_aggregation(
+            mode = isolate(run_inputs$mode),
+            grid_path = isolate(run_inputs$grid_path),
+            grid_name = isolate(run_inputs$grid_name),
+            year = isolate(run_inputs$year),
+            #area_weight = isolate(run_inputs$area_weight),
+            states = isolate(run_inputs$input_states),
+            output_path = isolate(run_inputs$out_path),
+            output_name = isolate(run_inputs$outfile),
+            overwrite = isolate(run_inputs$overwrite),
+            shiny = TRUE
+          )
+        })
       }
-
-
     })
   }
 

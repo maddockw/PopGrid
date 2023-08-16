@@ -33,9 +33,11 @@ run_aggregation <- function(
     states = NULL,
     output_path = getwd(),
     output_name,
-    overwrite = FALSE
+    overwrite = FALSE,
+    shiny = FALSE
 ){
   t1 <- Sys.time()
+  message(paste0("Starting at ", t1))
 
   # message user about which states are being included
   if (is.null(states)){
@@ -86,7 +88,6 @@ run_aggregation <- function(
   combinations <- expand.grid(var_letters, new_digits, stringsAsFactors = FALSE)
   new_patterns <- c(paste0("P12", combinations$Var1, "_", combinations$Var2, "N"))
   final_vars <- c(variables[!grepl(drop_patterns, variables)], new_patterns)
-  print(final_vars)
 
   var_info <- var_information(vars = final_vars, year = year, dataset = census_file)
   var_info_abb <- var_info %>%
@@ -133,12 +134,17 @@ run_aggregation <- function(
   edge_weights_outfile <- file.path(output_path, "edge_weights.csv")
   weights_outfile <- file.path(output_path, paste0(output_name, "_weights", ".csv"))
   overwrite_check <- file.path(output_path, "overwrite_check")
+  audit_trail_file <- file.path(output_path, paste0(output_name, "_audit_trail.txt"))
   if (file.exists(overwrite_check)){
     file.remove(overwrite_check)
   }
 
   # iterate across states and counties
   state_FIPS %>% lapply(function(state){
+    if (shiny == TRUE){
+      incProgress(1/length(state_FIPS), detail = paste0("Working on state ", state, " (FIPS)"))
+    }
+
     state_counties <- county_state %>% filter(STATEFP == state)
     county_names <- state_counties$COUNTYFP %>% unique
 
@@ -270,6 +276,17 @@ run_aggregation <- function(
                 write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
                 write.table(weights_interior, file = weights_outfile, row.names = FALSE, sep = ",")
                 write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
+                cat(paste0("PopGrid run started at ", t1),
+                    "Inputs used:",
+                    paste0("mode = ", mode),
+                    paste0("grid_path = ", grid_path),
+                    paste0("grid_name = ", grid_name),
+                    paste0("year = ", as.character(year)),
+                    paste0("area_weight = ", area_weight),
+                    paste0("states = ", states),
+                    paste0("output_path = ", output_path),
+                    paste0("output_name = ", output_name),
+                    paste0("overwrite = ", overwrite), sep = "\n", file = audit_trail_file)
               }
             } else{
               file.create(overwrite_check)
@@ -278,6 +295,17 @@ run_aggregation <- function(
               write.table(interior_csv, file = csv_outfile, row.names = FALSE, sep = ",")
               write.table(weights_interior, file = weights_outfile, row.names = FALSE, sep = ",")
               write.table(weights_edge, file = edge_weights_outfile, row.names = FALSE, sep = ",")
+              cat(paste0("PopGrid run started at ", t1),
+                  "Inputs used:",
+                  paste0("mode = ", mode),
+                  paste0("grid_path = ", grid_path),
+                  paste0("grid_name = ", grid_name),
+                  paste0("year = ", as.character(year)),
+                  paste0("area_weight = ", area_weight),
+                  paste0("states = ", states),
+                  paste0("output_path = ", output_path),
+                  paste0("output_name = ", output_name),
+                  paste0("overwrite = ", overwrite), sep = "\n", file = audit_trail_file)
             }
           } else{
             st_write(diss_edge, edge_outfile, append = TRUE, quiet = TRUE)
@@ -369,7 +397,9 @@ run_aggregation <- function(
   file.remove(paste0(edge_delete, c(".shp", ".shx", ".dbf", ".prj")))
   file.remove(edge_weights_outfile)
   file.remove(file.path(output_path, "lock.txt"))
+  file.remove(file.path(output_path, "overwrite_check"))
 
   t2 <- Sys.time() - t1
+  cat(paste0("Run completed at: ", Sys.time()), file = audit_trail_file, append = TRUE)
   print(t2)
 }
