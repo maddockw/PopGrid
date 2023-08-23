@@ -8,13 +8,14 @@ run_aggregation(
   mode = "shapefile",
   grid_path = NULL,
   grid_name = NULL,
-  year = 2010,
+  year = 2020,
   variables = NULL,
   area_weight = TRUE,
   states = NULL,
   output_path = getwd(),
   output_name,
-  overwrite = FALSE
+  overwrite = FALSE,
+  shiny = FALSE
 )
 }
 \arguments{
@@ -24,7 +25,7 @@ run_aggregation(
 
 \item{grid_name}{A character value representing the name of the shapefile to use. Do not include file extension. Only used when \code{mode = "shapefile"}.}
 
-\item{year}{A numeric value indicating the year of the desired Census data. Defaults to \code{2010}.}
+\item{year}{A numeric value indicating the year of the desired Census data. Defaults to \code{2020}.}
 
 \item{variables}{A character vector indicating the Census variables to include. Use \code{\link[tidycensus:load_variables]{tidycensus::load_variables()}} to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.}
 
@@ -46,7 +47,7 @@ This function allows users to aggregate block-level population data from the dec
 }
 \examples{
 run_aggregation(mode = "county",
- year = 2010,
+ year = 2020,
  states = c("MA", "RI", "CT", "ME", "NH", "VT"),
  output_name = "New England")
 }

@@ -1,9 +1,9 @@
 #' Shiny app to aggregate block-level population data from the decennial Census to a chosen grid definition
 #'
 #' @description
-#' This function runs PopGrid via a shiny app UI, offering the same functionality as run_aggregation but with a simple way to provide inputs.
+#' This function runs PopGrid via a shiny app UI, offering the same functionality as [PopGrid::run_aggregation] but with a simple way to provide inputs.
 #'
-#' @return [PopGrid::PopGridApp()] does not return a value, but instead saves three output files: a shapefile of the selected grid with population data, a CSV with the number of people in each grid cell for each of the race-ethnicity-gender-age demographic groups included in BenMAP, and a CSV with the fraction of the total population in each of the eight race-ethnic groups that comes from each U.S. county.
+#' @return [PopGrid::PopGridApp] does not return a value but instead saves three output files: a shapefile of the selected grid with population data, a CSV with gridded population for each of the race-ethnicity-gender-age demographic groups included in BenMAP, and a CSV with county weights for each of the eight race-ethnic groups for each grid cell.
 #' @export
 #'
 #' @examples
