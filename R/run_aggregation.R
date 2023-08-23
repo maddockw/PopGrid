@@ -98,14 +98,32 @@ run_aggregation <- function(
   # if user has selected either county or tract mode, run helper functions specific to those grid definitions
   if (mode == "county"){
     message("Aggregating population data to U.S. Census County level")
+    cat(paste0("PopGrid run started at ", t1),
+        "Inputs used:",
+        paste0("mode = ", mode),
+        paste0("year = ", as.character(year)),
+        paste0("states = ", states),
+        paste0("output_path = ", output_path),
+        paste0("output_name = ", output_name),
+        paste0("overwrite = ", overwrite), sep = "\n", file = file.path(output_path, paste0(output_name, "_audit_trail.txt")))
     county_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, final_vars = final_vars, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    cat(paste0("Run completed at ", Sys.time()), file = file.path(output_path, paste0(output_name, "_audit_trail.txt")), append = TRUE)
     message("Aggregation complete, outputs saved")
-    silent_stop()
+    return()
   } else if (mode == "tract"){
     message("Aggregating population data to U.S. Census Tract level")
+    cat(paste0("PopGrid run started at ", t1),
+        "Inputs used:",
+        paste0("mode = ", mode),
+        paste0("year = ", as.character(year)),
+        paste0("states = ", states),
+        paste0("output_path = ", output_path),
+        paste0("output_name = ", output_name),
+        paste0("overwrite = ", overwrite), sep = "\n", file = file.path(output_path, paste0(output_name, "_audit_trail.txt")))
     tract_aggregation(states = states, year = year, census_file = census_file, variables = variables, var_info = var_info, var_info_abb = var_info_abb, final_vars = final_vars, output_path = output_path, crs = NA_eq, output_name = output_name, overwrite = overwrite)
+    cat(paste0("Run completed at ", Sys.time()), file = file.path(output_path, paste0(output_name, "_audit_trail.txt")), append = TRUE)
     message("Aggregation complete, outputs saved")
-    silent_stop()
+    return()
   }
 
   # if user has selected shapefile mode, continue
@@ -400,6 +418,6 @@ run_aggregation <- function(
   file.remove(file.path(output_path, "overwrite_check"))
 
   t2 <- Sys.time() - t1
-  cat(paste0("Run completed at: ", Sys.time()), file = audit_trail_file, append = TRUE)
+  cat(paste0("Run completed at ", Sys.time()), file = audit_trail_file, append = TRUE)
   print(t2)
 }

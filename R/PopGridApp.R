@@ -77,7 +77,10 @@ PopGridApp <- function(){
                 #<p>The <strong>Centroid</strong> approach allocates block population data to grid cells based on block centroids.</p>
                 #<br>",
                "<h4>States</h4>
-                <p>Allocation can be done for <strong>All CONUS states</strong>, which includes all of the contiguous U.S. If you only need population data for a subset of states, you can <strong>Select a subset of states</strong> on the <em>State Selection</em> tab instead.</p>")
+                <p>Allocation can be done for <strong>All CONUS states</strong>, which includes all of the contiguous U.S. If you only need population data for a subset of states, you can <strong>Select a subset of states</strong> on the <em>State Selection</em> tab instead.</p>
+                <br>",
+               "<h4>Processing Time</h4>
+                <p>This app downloads fine-scale data from the U.S. Census Bureau and performs spatial analysis and data formatting operations. In shapefile mode, multi-state analyses may take many hours to run. Runtime depends primarily on download speed and the number of cores available on your computer. The app is designed to run in parallel automatically when multiple cores are available, and using a computer with more cores will decrease runtime.</p>")
         ),
         if (input$mode == "shapefile") {
           tabPanel(
@@ -228,16 +231,16 @@ PopGridApp <- function(){
           ((run_inputs$mode == "shapefile" & !is.null(run_inputs$grid_path) & !is.null(run_inputs$grid_name)) | run_inputs$mode != "shapefile") &
           (input$states == "Select a subset of states" & !is.null(run_inputs$input_states) | input$states != "Select a subset of states")
       ) {
-        message("running with inputs:")
-        message("mode = ", run_inputs$mode)
-        message("grid_path = ", run_inputs$grid_path)
-        message("grid_name = ", run_inputs$grid_name)
-        message("year = ", run_inputs$year)
-        message("area_weight = ",  run_inputs$area_weight)
-        message("states = ",  run_inputs$input_states)
-        message("out_path = ", run_inputs$out_path)
-        message("out_name = ", run_inputs$outfile)
-        message("overwrite = ",  run_inputs$overwrite)
+        # message("running with inputs:")
+        # message("mode = ", run_inputs$mode)
+        # message("grid_path = ", run_inputs$grid_path)
+        # message("grid_name = ", run_inputs$grid_name)
+        # message("year = ", run_inputs$year)
+        # message("area_weight = ",  run_inputs$area_weight)
+        # message("states = ",  run_inputs$input_states)
+        # message("out_path = ", run_inputs$out_path)
+        # message("out_name = ", run_inputs$outfile)
+        # message("overwrite = ",  run_inputs$overwrite)
 
         withProgress(message = "Aggregating population", value = 0, {
           run_aggregation(
