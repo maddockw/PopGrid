@@ -24,7 +24,7 @@ PopGridApp <- function(){
                     width = "100%"),
         selectInput("year",
                     "Select a year",
-                    choices = c(2010, 2020),
+                    choices = 2020,#c(2010, 2020),
                     selected = 2020,
                     width = "100%"),
         #selectInput("method", "Select an aggregation method", choices = c("Area weighting", "Centroids"), selected = "Area weighting", width = "100%"),
@@ -70,7 +70,7 @@ PopGridApp <- function(){
                 <p><strong>County</strong> and <strong>Tract</strong> modes instead use U.S. Census-defined county and tract shapes, respectively. These options do not require a shapefile.</p>
                 <br>",
                "<h4>Year</h4>
-                <p>Indicates the U.S. decennial Census year to use for population allocation.</p>
+                <p>Indicates the U.S. decennial Census year to use for population allocation. The only decennial Census year currently supported is 2020.</p>
                 <br>",
                #"<h4>Aggregation Method</h4>
                 #<p>The <strong>Area Weighting</strong> approach allocates block population data to grid cells based on area proportion. This is the recommended approach.</p>

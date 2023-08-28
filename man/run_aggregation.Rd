@@ -25,7 +25,7 @@ run_aggregation(
 
 \item{grid_name}{A character value representing the name of the shapefile to use. Do not include file extension. Only used when \code{mode = "shapefile"}.}
 
-\item{year}{A numeric value indicating the year of the desired Census data. Defaults to \code{2020}.}
+\item{year}{A numeric value indicating the year of the desired Census data. Defaults to \code{2020}, currently the only supported decennial Census year.}
 
 \item{variables}{A character vector indicating the Census variables to include. Use \code{\link[tidycensus:load_variables]{tidycensus::load_variables()}} to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.}
 

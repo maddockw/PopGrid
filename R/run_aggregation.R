@@ -6,7 +6,7 @@
 #' @param mode A character value indicating the type of grid to use for aggregation, one of `c("shapefile", "county", "tract")`. Defaults to using user-specified shapefile (`mode = "shapefile"`). `"county"` and `"tract"` options instead use U.S. Census-defined county and tract shapes, respectively.
 #' @param grid_path A character value representing the file path to the shapefile to use. Only used when `mode = "shapefile"`.
 #' @param grid_name A character value representing the name of the shapefile to use. Do not include file extension. Only used when `mode = "shapefile"`.
-#' @param year A numeric value indicating the year of the desired Census data. Defaults to `2020`.
+#' @param year A numeric value indicating the year of the desired Census data. Defaults to `2020`, currently the only supported decennial Census year.
 #' @param variables A character vector indicating the Census variables to include. Use [tidycensus::load_variables()] to get information on Census variables. Defaults to BenMAP input variables binned by age, sex, race, and ethnicity.
 #' @param area_weight A `TRUE/FALSE` value indicating whether to use an area weighting approach (block population data are allocated to grid cells based on area proportion, `area_weight = TRUE`) or a centroid approach (block population data are allocated to grid cells based on block centroids, `area_weight = FALSE`) to allocate block data to the chosen grid definition. Defaults to the area weighting approach (`area_weight = TRUE`). Only used when `mode = "county"` or `"tract"`.
 #' @param states A character value or character vector of state postal abbreviations indicating which states to include. If no input is provided, all CONUS states are included.
