@@ -17,16 +17,16 @@ allocate_area_weight <- function(
 
   # dissolve to the user grid
   dissolved <- intersection_pop %>%
-    group_by(COL, ROW) %>%
+    group_by(Column, Row) %>%
     summarize(across(all_of(variables), ~sum(.x, na.rm = TRUE))) %>%
-    mutate(gridID = paste(COL, ROW, sep = "_"))
+    mutate(gridID = paste(Column, Row, sep = "_"))
 
   # dissolve to user grid plus county ID for generating weights file later
   dissolved_wt <- intersection_pop %>%
-    mutate(countyID = substr(GEOID,1,5), keep = "unused") %>%
-    group_by(COL, ROW, countyID) %>%
+    mutate(countyID = substr(GEOID, 1, 5), keep = "unused") %>%
+    group_by(Column, Row, countyID) %>%
     summarize(across(all_of(variables), ~sum(.x, na.rm = TRUE))) %>%
-    mutate(gridID = paste(COL, ROW, sep = "_"))
+    mutate(gridID = paste(Column, Row, sep = "_"))
 
   return(list(dissolved = dissolved, weight = dissolved_wt))
 }
