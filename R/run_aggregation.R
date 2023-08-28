@@ -167,13 +167,7 @@ run_aggregation <- function(
     county_names <- state_counties$COUNTYFP %>% unique
 
     # set up cluster to do parallel processing
-    if (detectCores() == 1){
-      n_cores <- 1
-    } else {
-      n_cores <- detectCores() - 1
-    }
-
-    my_cluster <- makeCluster(n_cores, type = "PSOCK")
+    my_cluster <- makeCluster(availableCores(omit = 1), type = "PSOCK")
     clusterEvalQ(my_cluster, {
       library(PopGrid)
     })

@@ -67,7 +67,7 @@ PopGridApp <- function(){
           "Glossary",
           HTML("<h4>Mode</h4>
                 <p><strong>Shapefile</strong> mode allocates population to a user-provided shapefile. If selected, choose an input shapefile on the <em>Shapefile Selection</em> tab.</p>
-                <p><strong>County</strong> and <strong>Tract</strong> modes instead use U.S. Census-defined county and tract shapes, respectively</p>
+                <p><strong>County</strong> and <strong>Tract</strong> modes instead use U.S. Census-defined county and tract shapes, respectively. These options do not require a shapefile.</p>
                 <br>",
                "<h4>Year</h4>
                 <p>Indicates the U.S. decennial Census year to use for population allocation.</p>
