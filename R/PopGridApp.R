@@ -83,7 +83,7 @@ PopGridApp <- function(){
                 <p>In shapefile mode, multi-state analyses may take many hours to run. Runtime depends primarily on download speed and the number of cores available on your computer. The app is designed to run in parallel automatically when multiple cores are available, and using a computer with more cores will decrease runtime.</p>
                 <br>",
                "<h4>Census API</h4>
-                <p>This app downloads data directly from the U.S. Census Bureau, which requires an API key. If you have not already done so, request a key from https://api.census.gov/data/key_signup.html and set the key in your .Renviron file by running census_api_key('my_key_here', install=TRUE, overwrite=TRUE) in the R file you used to launch this app. You only need to do this one time.</p>")
+                <p>This app downloads data directly from the U.S. Census Bureau, which requires an API key. If you have not already done so, request a key from https://api.census.gov/data/key_signup.html and set the key in your .Renviron file by running census_api_key('my_key_here', install=TRUE, overwrite=TRUE) in the R file you used to launch this app. You only need to do this one time. Restart R or reload your environment with readRenviron('~/.Renviron') for this change to take effect.</p>")
         ),
         if (input$mode == "shapefile") {
           tabPanel(

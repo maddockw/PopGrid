@@ -40,7 +40,7 @@ run_aggregation <- function(
   message(paste0("Starting at ", t1))
 
   if (Sys.getenv("CENSUS_API_KEY") == ""){
-    message("Please set a Census API key. If you do not have one already, you can request one from https://api.census.gov/data/key_signup.html and set it in R by running census_api_key('my_key_here', install = TRUE, overwrite = TRUE), with the value of your key replacing the text my_key_here.")
+    message("Please set a Census API key. If you do not have one already, you can request one from https://api.census.gov/data/key_signup.html and set it in your .Renviron file by running by running census_api_key('my_key_here', install = TRUE, overwrite = TRUE), with the value of your key replacing the text my_key_here. You only need to do this one time. Restart R or reload your environment with readRenviron('~/.Renviron') for this change to take effect.")
     return()
   }
 
