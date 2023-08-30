@@ -64,13 +64,13 @@ PopGridApp <- function(){
     output$conditionalTabs <- renderUI({
       tabsetPanel(
         tabPanel(
-          "Glossary",
+          "Notes",
           HTML("<h4>Mode</h4>
                 <p><strong>Shapefile</strong> mode allocates population to a user-provided shapefile. If selected, choose an input shapefile on the <em>Shapefile Selection</em> tab.</p>
                 <p><strong>County</strong> and <strong>Tract</strong> modes instead use U.S. Census-defined county and tract shapes, respectively. These options do not require a shapefile.</p>
                 <br>",
                "<h4>Year</h4>
-                <p>Indicates the U.S. decennial Census year to use for population allocation. The only decennial Census year currently supported is 2020.</p>
+                <p>Indicates the U.S. decennial Census year to use for population allocation. The only year currently supported is <strong>2020</strong>.</p>
                 <br>",
                #"<h4>Aggregation Method</h4>
                 #<p>The <strong>Area Weighting</strong> approach allocates block population data to grid cells based on area proportion. This is the recommended approach.</p>
@@ -80,7 +80,10 @@ PopGridApp <- function(){
                 <p>Allocation can be done for <strong>All CONUS states</strong>, which includes all of the contiguous U.S. If you only need population data for a subset of states, you can <strong>Select a subset of states</strong> on the <em>State Selection</em> tab instead.</p>
                 <br>",
                "<h4>Processing Time</h4>
-                <p>This app downloads fine-scale data from the U.S. Census Bureau and performs spatial analysis and data formatting operations. In shapefile mode, multi-state analyses may take many hours to run. Runtime depends primarily on download speed and the number of cores available on your computer. The app is designed to run in parallel automatically when multiple cores are available, and using a computer with more cores will decrease runtime.</p>")
+                <p>In shapefile mode, multi-state analyses may take many hours to run. Runtime depends primarily on download speed and the number of cores available on your computer. The app is designed to run in parallel automatically when multiple cores are available, and using a computer with more cores will decrease runtime.</p>
+                <br>",
+               "<h4>Census API</h4>
+                <p>This app downloads data directly from the U.S. Census Bureau, which requires an API key. If you have not already done so, request a key from https://api.census.gov/data/key_signup.html and set the key in your .Renviron file by running census_api_key('my_key_here', install=TRUE, overwrite=TRUE) in the R file you used to launch this app. You only need to do this one time.</p>")
         ),
         if (input$mode == "shapefile") {
           tabPanel(

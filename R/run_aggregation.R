@@ -39,6 +39,11 @@ run_aggregation <- function(
   t1 <- Sys.time()
   message(paste0("Starting at ", t1))
 
+  if (Sys.getenv("CENSUS_API_KEY") == ""){
+    message("Please set a Census API key. If you do not have one already, you can request one from https://api.census.gov/data/key_signup.html and set it in R by running census_api_key('my_key_here', install = TRUE, overwrite = TRUE), with the value of your key replacing the text my_key_here.")
+    return()
+  }
+
   # message user about which states are being included
   if (is.null(states)){
     states <- state.abb[!state.abb %in% c("AK", "HI")] %>% append("DC")
